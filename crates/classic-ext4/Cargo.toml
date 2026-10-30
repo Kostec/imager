@@ -1,0 +1,22 @@
+[package]
+name = "classic-ext4"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.85"
+description = "Create directories and files in the classic ext4 rootfs of a RAW disk image, in userspace, without mounting."
+license = "MIT"
+
+[dependencies]
+ext4-view = { version = "0.9", features = ["std"] }
+mbrman = "0"
+
+[dev-dependencies]
+flate2 = "1"
+tempfile = "3"
+
+# The tests unpack a 68 MiB fixture and run overflow-checked code many times.
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 2
