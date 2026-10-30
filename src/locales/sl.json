@@ -2,19 +2,13 @@
   "home": {
     "manufacturer": "Proizvajalec",
     "board": "Plošča",
-    "operatingSystem": "Operacijski sistem",
     "storage": "Shramba",
     "chooseBrand": "Izberi znamko",
     "chooseBoard": "Izberi ploščo",
-    "chooseOs": "Izberi OS",
     "chooseStorage": "Izberi shrambo",
     "device": "Naprava",
     "chooseDevice": "Izberi napravo",
-    "welcomeHeading": "Dobrodošli v Armbian Imager",
-    "welcomeIntro": "Izberite ploščo in sliko. Mi jo prenesemo, zapišemo na kartico SD ali pogon USB in preverimo namesto vas.",
     "startNow": "Začni zdaj",
-    "useCustomImage": "Uporabi sliko po meri",
-    "changeCustomImage": "Spremeni sliko po meri",
     "changeCachedImage": "Spremeni predpomnjeno sliko",
     "imageCount_one": "{{count}} slika",
     "imageCount_other": "{{count}} slik",
@@ -90,7 +84,6 @@
     "noManufacturers": "Proizvajalcev ni mogoče najti",
     "noBoards": "Plošč ni mogoče najti",
     "boardUpdateRequired": "Potrebna posodobitev",
-    "boardUpdateRequiredHint": "Ta plošča ni podprta v tej različici Armbian Imagerja. Posodobite aplikacijo.",
     "noImages": "Slik ni mogoče najti",
     "noImagesHint": "Za to ploščo trenutno ni objavljenih slik.",
     "noDevices": "Naprav ni mogoče najti",
@@ -141,12 +134,9 @@
     "uploadLogsForSupport": "Naloži dnevnike za podporo",
     "viewLogs": "Prikaži dnevnike",
     "scanQrOrShare": "Skenirajte QR ali delite to povezavo:",
-    "serverTitle": "Strežniki Armbian se ne odzivajo",
     "serverHint": "Težava ni v vaši povezavi. Poskusite znova čez nekaj minut.",
-    "networkTitle": "Armbiana ni mogoče doseči",
     "networkHint": "Preverite internetno povezavo ali poskusite znova čez nekaj minut.",
     "otherTitle": "Tega seznama ni bilo mogoče naložiti",
-    "otherHint": "Poskusite znova. Če se težava ponavlja, naložite dnevnike, da jih lahko ekipa Armbian pregleda.",
     "devicesTitle": "Naprav za shranjevanje ni bilo mogoče preveriti",
     "devicesHint": "Ponovno povežite bralnik kartic ali pogon in poskusite znova.",
     "edlDevicesTitle": "Iskanje naprav v načinu EDL ni uspelo",
@@ -159,7 +149,6 @@
     "logsStepScan": "Skenirajte kodo ali kopirajte povezavo",
     "logsStepIssue": "Odprite issue na GitHubu",
     "logsStepPaste": "Prilepite povezavo in opišite težavo",
-    "logsCaption": "Dnevniki Armbian",
     "openInBrowser": "Odpri v brskalniku"
   },
   "error": {
@@ -176,7 +165,6 @@
     "qdlPermissionDenied": "Dostop do USB zavrnjen. V Linuxu namestite pravila udev: echo 'SUBSYSTEM==\"usb\", ATTR{idVendor}==\"05c6\", ATTR{idProduct}==\"9008\", MODE=\"0666\"' | sudo tee /etc/udev/rules.d/51-qdl.rules && echo 'blacklist qcserial' | sudo tee /etc/modprobe.d/blacklist-qcserial.conf && sudo udevadm control --reload-rules",
     "qdlConnectionFailed": "Povezava z napravo EDL ni uspela. Preverite, ali je naprava v načinu EDL in povezana prek USB.",
     "qdlAutoconfigFailed": "Profila samodejne konfiguracije ni bilo mogoče uporabiti za sliko QDL.",
-    "autoconfigNotArmbian": "Ta slika nima Armbianove nastavitve ob prvem zagonu, zato profila ni mogoče uporabiti. Zapišite jo brez profila ali izberite sliko Armbian.",
     "deviceInvalidPath": "Na to napravo ni mogoče pisati. Napravo izberite znova.",
     "deviceNotFound": "Izbrana naprava ni več povezana. Ponovno jo povežite in znova izberite.",
     "deviceChanged": "Izbrana naprava se je spremenila, odkar ste jo izbrali. Pred pisanjem jo izberite znova.",
@@ -197,7 +185,6 @@
     "selectError": "Izbrane slike ni bilo mogoče odpreti"
   },
   "armbian": {
-    "description": "Ta naprava uporablja Armbian. Želite to ploščo izbrati vnaprej in preskočiti ročne korake?",
     "cancelHint": "Preklic bo onemogočil samodejno zaznavanje.",
     "disabledToast": "Samodejno zaznavanje izklopljeno. Ponovno vklopite v nastavitvah."
   },
@@ -284,7 +271,6 @@
     "allowSystemDevicesDescription": "Tvegano: lahko prepišeš delujoči operacijski sistem.",
     "armbian": {
       "label": "Samodejna zaznava plošče",
-      "description": "Samodejno prepoznaj ploščo te naprave, ko deluje na Armbianu",
       "mode_disabled": "Onemogočeno",
       "mode_modal": "Interaktivno",
       "mode_auto": "Samodejno"
@@ -322,19 +308,15 @@
       "nameRequired": "Vnesite ime profila",
       "selectPlaceholder": "Izberi…",
       "urlInvalid": "Vnesi veljaven URL (http ali https)",
-      "armbianDefaults": "Privzete nastavitve Armbiana",
       "keys": {
         "checking": "Preverjanje ključev...",
-        "found_one": "Najden je {{count}} ključ. Plošča ga prenese ob prvem zagonu.",
-        "found_other": "Najdenih ključev: {{count}}. Plošča jih prenese ob prvem zagonu.",
         "notFoundForge": "Računa {{forge}} s tem uporabniškim imenom ni.",
         "notFoundLink": "Na tej povezavi ni bilo najdeno nič.",
         "noneForge": "Ta račun {{forge}} še nima javnih ključev SSH.",
         "noneLink": "Ta povezava ne streže javnih ključev SSH.",
         "tooLarge": "Ta naslov streže preveč podatkov za seznam javnih ključev.",
         "invalidForge": "To ni veljavno uporabniško ime {{forge}}.",
-        "invalidLink": "Tu je mogoče preveriti samo povezave https.",
-        "unreachable": "Ključev trenutno ni mogoče preveriti. Plošča jih prenese ob prvem zagonu."
+        "invalidLink": "Tu je mogoče preveriti samo povezave https."
       },
       "ipInvalid": "Vnesite veljaven naslov IPv4 (npr. 192.168.1.50)",
       "ipNotHost": "To je omrežni ali broadcast naslov podomrežja, ne uporaben naslov naprave. Izberite takega, kot je 192.168.1.50",
@@ -366,8 +348,6 @@
       "guidedHint": "Eno vprašanje naenkrat",
       "fillForm": "Izpolni obrazec",
       "fillFormHint": "Vse možnosti na eni strani",
-      "wifiKeyFits": "Primerno za Wi-Fi (od 8 do 63 znakov)",
-      "wifiKeyLength": "Gesla Wi-Fi imajo običajno od 8 do 63 znakov",
       "wizard": {
         "eyebrow": "Nov profil",
         "unnamed": "Še brez imena",
@@ -391,10 +371,6 @@
           "locale": "Jezik in čas",
           "access": "Dostop",
           "review": "Pregled"
-        },
-        "pending": {
-          "network": "Ohrani privzete nastavitve Armbiana",
-          "locale": "Privzete nastavitve Armbiana"
         },
         "sum": {
           "keysFrom": "Ključi SSH z {{forge}}",
@@ -429,22 +405,17 @@
           "sub": "Račun, ki ga uporabljate na plošči, za prijavo in za sudo.",
           "now": "Ustvari zdaj",
           "later": "Ob prvi prijavi",
-          "more": "Polno ime in lupina za prijavo",
-          "shellDefault": "Privzeto v Armbianu",
-          "laterLine": "Ob prvi prijavi, prek SSH ali s tipkovnico in zaslonom, vas Armbian pozove, da ustvarite uporabnika. Jezik in čas iz tega profila se takrat ne uporabita."
+          "more": "Polno ime in lupina za prijavo"
         },
         "locale": {
           "title": "Jezik in čas",
-          "sub": "Nastavljeno ob prvi prijavi, ne glede na to, ali se uporabnik ustvari zdaj.",
           "location": "Glede na lokacijo",
           "choose": "Izberem sam",
           "language": "Jezik",
-          "searchTimezone": "Išči časovne pasove",
-          "locationLine": "Armbian nastavi jezik in časovni pas glede na kraj, od koder se plošča poveže v internet."
+          "searchTimezone": "Išči časovne pasove"
         },
         "access": {
           "title": "Kako vstopate?",
-          "sub": "S ključi SSH se prijavite brez vnosa gesla.",
           "keys": "Ključi SSH",
           "passwordOnly": "Samo geslo",
           "link": "Povezava",
@@ -457,8 +428,7 @@
           "title": "Pripravljeno za ustvarjanje: {{name}}",
           "sub": "Preverite enkrat. Nato bo izbran na povzetku.",
           "subSettings": "Preverite enkrat. Nato se prikaže na vašem seznamu profilov.",
-          "titleEmpty": "V {{name}} še ni nič nastavljeno",
-          "subEmpty": "Vsako področje ohrani privzete vrednosti Armbiana, zato ni ničesar za zapisati. Uredite eno, da ga ustvarite."
+          "titleEmpty": "V {{name}} še ni nič nastavljeno"
         }
       },
       "editor": {
@@ -494,22 +464,16 @@
         "netFixed": "Stalni, {{ip}}",
         "netAuto": "Samodejni naslov",
         "whoLogsIn": "Kdo se prijavlja",
-        "laterHint": "Armbian vpraša ob prvi prijavi",
-        "userOk": "Male črke, začne se s črko",
         "userCreatedAs": "Ustvarjen kot {{name}}",
-        "userInvalid": "Uporabite male črke, števke, - in _",
         "passwordRequired": "Potrebno za prijavo",
         "fullNameRequired": "Potrebno za nastavitev jezika in časovnega pasu",
         "fullNameNotSet": "Polno ime ni nastavljeno",
-        "howYouGetIn": "Kako se prijavite",
         "passwordLoginHint": "Prijava z geslom",
-        "keysFrom": "Ključi iz",
         "keyUserRequired": "Vnesite uporabniško ime",
         "keyLinkRequired": "Prilepite povezavo do javnih ključev",
         "rootSet": "Geslo root je nastavljeno",
         "rootNotSet": "Geslo root ni nastavljeno",
         "rootPlaceholder": "Ni nastavljeno",
-        "rootHint": "Če je prazno, ga Armbian vpraša ob prvi prijavi",
         "locationHint": "Nastavljeno glede na to, od kod se plošča poveže",
         "remoteHint": "Uporabljeno ob prvem zagonu",
         "atFirstBoot": "Ob prvem zagonu",
@@ -517,8 +481,6 @@
         "factBothFixed": "Wi-Fi {{address}}, kabel samodejno",
         "factDhcp": "DHCP",
         "factUser": "Uporabnik {{name}}",
-        "factKeys_one": "{{count}} ključ SSH · {{source}}",
-        "factKeys_other": "Ključi SSH: {{count}} · {{source}}",
         "factKeysMissing": "Ključi SSH niso najdeni",
         "factTzUnset": "Časovni pas ni nastavljen",
         "sectionsSet": "Nastavljeno: {{done}} od {{total}}",
@@ -533,7 +495,6 @@
         "createNeedsFix": "Popravite označena polja, da ga ustvarite",
         "saveNeedsSomething": "Nastavite vsaj eno stvar, da ga shranite",
         "createNeedsSomething": "Nastavite vsaj eno stvar, da ga ustvarite",
-        "useDefaults": "Uporabi privzete nastavitve Armbiana",
         "deleteProfile": "Izbriši profil",
         "deleteProfileDesc": "Odstrani se iz Imagerja. Že zapisane pomnilniške kartice obdržijo svoje nastavitve.",
         "discard": "Zavrzi",
@@ -637,8 +598,7 @@
       "chipWrite": "Zapis",
       "chipVerify": "Preverjanje",
       "verifyAfter": "Preveri po zapisovanju",
-      "verifyAfterDesc": "Prebere napravo nazaj in jo primerja s sliko. Traja dlje",
-      "detectionUnavailable": "Samo kadar ta računalnik deluje na Armbianu"
+      "verifyAfterDesc": "Prebere napravo nazaj in jo primerja s sliko. Traja dlje"
     },
     "downloads": {
       "lead": "Predpomnilnik slik in omrežje",
@@ -655,15 +615,13 @@
       "checking": "Preverjanje…",
       "website": "Spletno mesto",
       "reportSub": "Težave na GitHubu",
-      "support": "Podprite Armbian",
       "logsEyebrow": "Dnevniki",
       "sessionLog": "Dnevnik seje",
       "sessionLogDesc": "Dnevnik te seje, ki ga priložite poročilom o napakah",
       "open": "Odpri",
       "upload": "Naloži",
       "sharedLogs": "Deljeni dnevniki",
-      "sharedLogsDesc": "Naložite dnevnik na {{host}} in prejmite povezavo za deljenje",
-      "credits": "Armbian Imager je prosta programska oprema z licenco GPL-2.0-or-later. Ustvarila jo je skupnost Armbian s ogrodjem Tauri {{tauri}}. Zastave: Twemoji, CC-BY 4.0."
+      "sharedLogsDesc": "Naložite dnevnik na {{host}} in prejmite povezavo za deljenje"
     },
     "profiles": {
       "lead": "Nastavitve za prvi zagon, uporabljene le, ko izberete profil",
@@ -686,7 +644,6 @@
     "railDownloading": "Prenašanje posodobitve",
     "restartBlocked": "Znova zaženete lahko, ko se zapisovanje konča.",
     "retry": "Poskusi znova",
-    "appVersionAvailable": "Armbian Imager {{version}} je na voljo",
     "versionReady": "{{version}} je pripravljena",
     "downloadingVersion": "Prenašanje {{version}}",
     "transferProgress": "{{done}} od {{total}}",

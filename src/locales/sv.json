@@ -2,19 +2,13 @@
   "home": {
     "manufacturer": "Tillverkare",
     "board": "Kort",
-    "operatingSystem": "Operativsystem",
     "storage": "Lagring",
     "chooseBrand": "Välj tillverkare",
     "chooseBoard": "Välj kort",
-    "chooseOs": "Välj operativsystem",
     "chooseStorage": "Välj lagring",
     "device": "Enhet",
     "chooseDevice": "Välj enhet",
-    "welcomeHeading": "Välkommen till Armbian Imager",
-    "welcomeIntro": "Välj ditt kort och en avbildning. Vi laddar ner den, skriver den till ditt SD-kort eller USB-minne och kontrollerar den åt dig.",
     "startNow": "Kom igång",
-    "useCustomImage": "Använd egen avbildning",
-    "changeCustomImage": "Byt egen avbildning",
     "changeCachedImage": "Byt cachad avbildning",
     "imageCount_one": "{{count}} avbildning",
     "imageCount_other": "{{count}} avbildningar",
@@ -90,7 +84,6 @@
     "noManufacturers": "Inga tillverkare hittades",
     "noBoards": "Inga kort hittades",
     "boardUpdateRequired": "Uppdatering krävs",
-    "boardUpdateRequiredHint": "Det här kortet stöds inte av den här versionen av Armbian Imager. Uppdatera appen.",
     "noImages": "Inga avbildningar hittades",
     "noImagesHint": "Inga avbildningar är publicerade för det här kortet just nu.",
     "noDevices": "Inga enheter hittades",
@@ -141,12 +134,9 @@
     "uploadLogsForSupport": "Ladda upp loggar för support",
     "viewLogs": "Visa loggar",
     "scanQrOrShare": "Skanna QR-koden eller dela den här länken:",
-    "serverTitle": "Armbians servrar svarar inte",
     "serverHint": "Det beror inte på din anslutning. Försök igen om några minuter.",
-    "networkTitle": "Det går inte att nå Armbian",
     "networkHint": "Kontrollera din internetanslutning eller försök igen om några minuter.",
     "otherTitle": "Den här listan kunde inte laddas",
-    "otherHint": "Försök igen. Om det fortsätter, ladda upp loggarna så att Armbian-teamet kan undersöka det.",
     "devicesTitle": "Det gick inte att kontrollera dina lagringsenheter",
     "devicesHint": "Anslut kortläsaren eller enheten igen och försök på nytt.",
     "edlDevicesTitle": "Det gick inte att söka efter enheter i EDL-läge",
@@ -159,7 +149,6 @@
     "logsStepScan": "Skanna koden eller kopiera länken",
     "logsStepIssue": "Öppna ett issue på GitHub",
     "logsStepPaste": "Klistra in länken och beskriv problemet",
-    "logsCaption": "Armbian-loggar",
     "openInBrowser": "Öppna i webbläsaren"
   },
   "error": {
@@ -176,7 +165,6 @@
     "qdlPermissionDenied": "USB-åtkomst nekad. På Linux, installera udev-regler: echo 'SUBSYSTEM==\"usb\", ATTR{idVendor}==\"05c6\", ATTR{idProduct}==\"9008\", MODE=\"0666\"' | sudo tee /etc/udev/rules.d/51-qdl.rules && echo 'blacklist qcserial' | sudo tee /etc/modprobe.d/blacklist-qcserial.conf && sudo udevadm control --reload-rules",
     "qdlConnectionFailed": "Det gick inte att ansluta till EDL-enheten. Kontrollera att den är i EDL-läge och ansluten via USB.",
     "qdlAutoconfigFailed": "Det gick inte att tillämpa autoconfig-profilen på QDL-avbildningen.",
-    "autoconfigNotArmbian": "Den här avbilden har ingen Armbian-konfiguration för första uppstart, så profilen kan inte tillämpas. Flasha utan profil eller välj en Armbian-avbild.",
     "deviceInvalidPath": "Det går inte att skriva till den här enheten. Välj enheten igen.",
     "deviceNotFound": "Den valda enheten är inte längre ansluten. Anslut den igen och välj den på nytt.",
     "deviceChanged": "Den valda enheten har ändrats sedan du valde den. Välj den igen innan du skriver.",
@@ -197,7 +185,6 @@
     "selectError": "Det gick inte att öppna den valda avbildningen"
   },
   "armbian": {
-    "description": "Den här enheten kör Armbian. Vill du förvälja det här kortet och hoppa över de manuella stegen?",
     "cancelHint": "Om du avbryter stängs automatisk identifiering av kort av.",
     "disabledToast": "Automatisk identifiering av kort avstängd. Slå på den igen under Inställningar."
   },
@@ -284,7 +271,6 @@
     "allowSystemDevicesDescription": "Riskabelt: du kan skriva över operativsystemet som körs.",
     "armbian": {
       "label": "Identifiera kort automatiskt",
-      "description": "Identifiera kortet automatiskt när den här enheten kör Armbian",
       "mode_disabled": "Avstängd",
       "mode_modal": "Interaktiv",
       "mode_auto": "Tyst"
@@ -322,19 +308,15 @@
       "nameRequired": "Ange ett profilnamn",
       "selectPlaceholder": "Välj…",
       "urlInvalid": "Ange en giltig URL (http eller https)",
-      "armbianDefaults": "Armbians standardvärden",
       "keys": {
         "checking": "Kontrollerar nycklarna...",
-        "found_one": "{{count}} nyckel hittades. Kortet hämtar den vid första uppstarten.",
-        "found_other": "{{count}} nycklar hittades. Kortet hämtar dem vid första uppstarten.",
         "notFoundForge": "Inget {{forge}}-konto med det här användarnamnet.",
         "notFoundLink": "Ingenting hittades på den här länken.",
         "noneForge": "Det här {{forge}}-kontot har inga publika SSH-nycklar än.",
         "noneLink": "Den här länken serverar inga publika SSH-nycklar.",
         "tooLarge": "Den här adressen serverar för mycket för att vara en lista med publika nycklar.",
         "invalidForge": "Det här är inget giltigt {{forge}}-användarnamn.",
-        "invalidLink": "Här går det bara att kontrollera https-länkar.",
-        "unreachable": "Det gick inte att kontrollera nycklarna just nu. Kortet hämtar dem vid första uppstarten."
+        "invalidLink": "Här går det bara att kontrollera https-länkar."
       },
       "ipInvalid": "Ange en giltig IPv4-adress (t.ex. 192.168.1.50)",
       "ipNotHost": "Det här är nätverksadressen eller broadcast-adressen för subnätet, inte en användbar enhetsadress. Välj en som 192.168.1.50",
@@ -366,8 +348,6 @@
       "guidedHint": "En fråga i taget",
       "fillForm": "Fyll i formuläret",
       "fillFormHint": "Alla alternativ på en sida",
-      "wifiKeyFits": "Passar för Wi-Fi (8 till 63 tecken)",
-      "wifiKeyLength": "Wi-Fi-lösenord har oftast 8 till 63 tecken",
       "wizard": {
         "eyebrow": "Ny profil",
         "unnamed": "Inget namn än",
@@ -391,10 +371,6 @@
           "locale": "Språk och tid",
           "access": "Åtkomst",
           "review": "Granska"
-        },
-        "pending": {
-          "network": "Behåller Armbians standardvärden",
-          "locale": "Armbians standardvärden"
         },
         "sum": {
           "keysFrom": "SSH-nycklar från {{forge}}",
@@ -429,22 +405,17 @@
           "sub": "Kontot du använder på kortet, för inloggning och för sudo.",
           "now": "Skapa nu",
           "later": "Vid första inloggningen",
-          "more": "Fullständigt namn och inloggningsskal",
-          "shellDefault": "Armbians standard",
-          "laterLine": "Första gången du loggar in, via SSH eller med tangentbord och bildskärm, ber Armbian dig skapa en användare. Språket och tiden från den här profilen tillämpas då inte."
+          "more": "Fullständigt namn och inloggningsskal"
         },
         "locale": {
           "title": "Språk och tid",
-          "sub": "Ställs in vid första inloggningen, oavsett om en användare skapas nu.",
           "location": "Från platsen",
           "choose": "Jag väljer",
           "language": "Språk",
-          "searchTimezone": "Sök tidszoner",
-          "locationLine": "Armbian ställer in språk och tidszon utifrån var kortet ansluter till internet."
+          "searchTimezone": "Sök tidszoner"
         },
         "access": {
           "title": "Hur kommer du in?",
-          "sub": "Med SSH-nycklar loggar du in utan att skriva ett lösenord.",
           "keys": "SSH-nycklar",
           "passwordOnly": "Endast lösenord",
           "link": "Länk",
@@ -457,8 +428,7 @@
           "title": "Redo att skapa {{name}}",
           "sub": "Kontrollera en gång. Sedan är den vald i sammanfattningen.",
           "subSettings": "Kontrollera en gång. Sedan visas den i din profillista.",
-          "titleEmpty": "Inget är inställt i {{name}} ännu",
-          "subEmpty": "Varje område behåller Armbians standardvärden, så det finns inget att skriva. Redigera ett för att skapa den."
+          "titleEmpty": "Inget är inställt i {{name}} ännu"
         }
       },
       "editor": {
@@ -494,22 +464,16 @@
         "netFixed": "Fast, {{ip}}",
         "netAuto": "Automatisk adress",
         "whoLogsIn": "Vem som loggar in",
-        "laterHint": "Armbian frågar vid första inloggningen",
-        "userOk": "Gemener, börjar med en bokstav",
         "userCreatedAs": "Skapas som {{name}}",
-        "userInvalid": "Använd gemener, siffror, - och _",
         "passwordRequired": "Behövs för att logga in",
         "fullNameRequired": "Behövs för att ange språk och tidszon",
         "fullNameNotSet": "Fullständigt namn inte angivet",
-        "howYouGetIn": "Hur du loggar in",
         "passwordLoginHint": "Logga in med ditt lösenord",
-        "keysFrom": "Nycklar från",
         "keyUserRequired": "Ange ett användarnamn",
         "keyLinkRequired": "Klistra in en länk till de publika nycklarna",
         "rootSet": "Root-lösenord angivet",
         "rootNotSet": "Root-lösenord inte angivet",
         "rootPlaceholder": "Inte angivet",
-        "rootHint": "Om tomt frågar Armbian efter det vid första inloggningen",
         "locationHint": "Anges utifrån var kortet ansluter",
         "remoteHint": "Tillämpas vid första uppstarten",
         "atFirstBoot": "Vid första uppstarten",
@@ -517,8 +481,6 @@
         "factBothFixed": "Wi-Fi {{address}}, kabel automatisk",
         "factDhcp": "DHCP",
         "factUser": "Användare {{name}}",
-        "factKeys_one": "{{count}} SSH-nyckel · {{source}}",
-        "factKeys_other": "{{count}} SSH-nycklar · {{source}}",
         "factKeysMissing": "SSH-nycklar hittades inte",
         "factTzUnset": "Tidszon inte angiven",
         "sectionsSet": "{{done}} av {{total}} angivna",
@@ -533,7 +495,6 @@
         "createNeedsFix": "Åtgärda de markerade fälten för att skapa den",
         "saveNeedsSomething": "Ställ in minst en sak för att spara den",
         "createNeedsSomething": "Ställ in minst en sak för att skapa den",
-        "useDefaults": "Använd Armbians standardvärden",
         "deleteProfile": "Ta bort profil",
         "deleteProfileDesc": "Tas bort från Imager. Redan skrivna minneskort behåller sina inställningar.",
         "discard": "Kassera",
@@ -637,8 +598,7 @@
       "chipWrite": "Skrivning",
       "chipVerify": "Verifiering",
       "verifyAfter": "Verifiera efter skrivning",
-      "verifyAfterDesc": "Läser tillbaka enheten och jämför den med avbildningen. Tar längre tid",
-      "detectionUnavailable": "Bara när den här datorn kör Armbian"
+      "verifyAfterDesc": "Läser tillbaka enheten och jämför den med avbildningen. Tar längre tid"
     },
     "downloads": {
       "lead": "Avbildningscache och nätverk",
@@ -655,15 +615,13 @@
       "checking": "Kontrollerar…",
       "website": "Webbplats",
       "reportSub": "GitHub-ärenden",
-      "support": "Stöd Armbian",
       "logsEyebrow": "Loggar",
       "sessionLog": "Sessionslogg",
       "sessionLogDesc": "Loggen för den här sessionen, att bifoga till felrapporter",
       "open": "Öppna",
       "upload": "Ladda upp",
       "sharedLogs": "Delade loggar",
-      "sharedLogsDesc": "Ladda upp loggen till {{host}} och få en länk att dela",
-      "credits": "Armbian Imager är fri programvara under GPL-2.0-or-later. Byggt av Armbian-communityn med Tauri {{tauri}}. Flaggor från Twemoji, CC-BY 4.0."
+      "sharedLogsDesc": "Ladda upp loggen till {{host}} och få en länk att dela"
     },
     "profiles": {
       "lead": "Inställningar för första uppstarten, tillämpas bara när du väljer en profil",
@@ -686,7 +644,6 @@
     "railDownloading": "Laddar ner uppdatering",
     "restartBlocked": "Du kan starta om när flashningen är klar.",
     "retry": "Försök igen",
-    "appVersionAvailable": "Armbian Imager {{version}} är tillgänglig",
     "versionReady": "{{version}} är klar",
     "downloadingVersion": "Laddar ner {{version}}",
     "transferProgress": "{{done}} av {{total}}",

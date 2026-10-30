@@ -90,7 +90,7 @@ json.dump({
 PY
   {
     declare -p E2E_HOSTNAME E2E_USER E2E_TIMEZONE E2E_LOCALE E2E_KEYBOARD E2E_WIFI_COUNTRY
-    declare -p E2E_PASSWORD E2E_USER_HASH E2E_WIFI_PSK E2E_KEY_BODY
+    declare -p E2E_WIFI_SSID E2E_PASSWORD E2E_USER_HASH E2E_WIFI_PSK E2E_KEY_BODY
   } | sed 's/^declare -[-x]* //' >/work/expected.env
 }
 
@@ -140,6 +140,19 @@ expect_mode() {
   local mode
   mode=$(file_mode "$1")
   [[ $mode == "$2" ]] && pass "image: $1 is $2" || fail "image: $1 is '$mode', not $2"
+}
+
+# ---- device scripts on stubs -------------------------------------------------
+
+check_device_scripts() {
+  local line
+  while IFS= read -r line; do
+    case "$line" in
+      FAIL*) fail "${line#FAIL }" ;;
+      PASS*) pass "${line#PASS }" ;;
+      *) report "$line" ;;
+    esac
+  done < <(bash "$HERE/device-test.sh" /source/src-tauri/device 2>&1)
 }
 
 # ---- boot -------------------------------------------------------------------
@@ -217,6 +230,26 @@ check_logins() {
   fi
 }
 
+# No shutdown: only what first boot put on the card itself survives, and /var/log is in RAM.
+check_power_cut() {
+  local count
+  kill -9 "$qemu_pid" 2>/dev/null
+  wait "$qemu_pid" 2>/dev/null
+  qemu_pid=
+  start_qemu
+  if ! wait_for_ssh; then
+    fail "power cut: no key login after the cold boot"
+    return 1
+  fi
+  pass "power cut: the card boots again"
+  [[ $(guest "systemctl is-active armbian-ramlog" </dev/null) == active ]] && pass "power cut: armbian-ramlog finished in time" || fail "power cut: armbian-ramlog did not finish"
+  guest_sudo grep -q "'firstboot: finished'" /var/log/wukong-firstboot.log && pass "power cut: the log keeps firstboot: finished" || fail "power cut: firstboot: finished is lost"
+  guest_sudo grep -q "'post-network: finished'" /var/log/wukong-firstboot.log && pass "power cut: the log keeps post-network: finished" || fail "power cut: post-network: finished is lost"
+  count=$(guest_sudo grep -c "'OK user script'" /var/log/wukong-firstboot.log)
+  [[ $count == 1 ]] && pass "power cut: the own script did not run again" || fail "power cut: own script count is '$count'"
+  [[ $(guest "systemctl is-active avahi-daemon" </dev/null) == active ]] && pass "power cut: avahi-daemon comes back" || fail "power cut: avahi-daemon does not run"
+}
+
 # After a power off the disk itself must show that nothing of the bundle survived.
 check_wiped_card() {
   guest_sudo poweroff >/dev/null 2>&1
@@ -265,10 +298,12 @@ boot_and_check() {
     || fail "first boot: stage after the network did not finish"
   check_logins
   check_guest
+  check_power_cut || return
   check_wiped_card
 }
 
 : >"$REPORT"
+check_device_scripts
 check_image
 if [[ ${E2E_OFFLINE:-0} == 1 ]]; then
   report "SKIP boot: --offline"

@@ -2,19 +2,13 @@
   "home": {
     "manufacturer": "Fabricante",
     "board": "Placa",
-    "operatingSystem": "Sistema Operativo",
     "storage": "Almacenamiento",
     "chooseBrand": "Elegir marca",
     "chooseBoard": "Elegir placa",
-    "chooseOs": "Elegir SO",
     "chooseStorage": "Elegir almacenamiento",
     "device": "Dispositivo",
     "chooseDevice": "Elegir dispositivo",
-    "welcomeHeading": "Bienvenido a Armbian Imager",
-    "welcomeIntro": "Elige tu placa y una imagen. Nosotros la descargamos, la escribimos en tu tarjeta SD o unidad USB y la verificamos por ti.",
     "startNow": "Empezar ahora",
-    "useCustomImage": "Usar imagen personalizada",
-    "changeCustomImage": "Cambiar imagen personalizada",
     "changeCachedImage": "Cambiar imagen en caché",
     "imageCount_one": "{{count}} imagen",
     "imageCount_other": "{{count}} imágenes",
@@ -90,7 +84,6 @@
     "noManufacturers": "No se encontraron fabricantes",
     "noBoards": "No se encontraron placas",
     "boardUpdateRequired": "Actualización necesaria",
-    "boardUpdateRequiredHint": "Esta placa no es compatible con esta versión de Armbian Imager. Actualiza la aplicación.",
     "noImages": "No se encontraron imágenes",
     "noImagesHint": "Ahora mismo no hay imágenes publicadas para esta placa.",
     "noDevices": "No se encontraron dispositivos",
@@ -141,12 +134,9 @@
     "uploadLogsForSupport": "Subir logs para soporte",
     "viewLogs": "Ver logs",
     "scanQrOrShare": "Escanea el QR o comparte este enlace:",
-    "serverTitle": "Los servidores de Armbian no responden",
     "serverHint": "No es un problema de tu conexión. Inténtalo de nuevo en unos minutos.",
-    "networkTitle": "No se puede llegar a Armbian",
     "networkHint": "Revisa tu conexión a internet o inténtalo de nuevo en unos minutos.",
     "otherTitle": "No se pudo cargar esta lista",
-    "otherHint": "Inténtalo de nuevo. Si sigue pasando, sube los logs para que el equipo de Armbian pueda revisarlo.",
     "devicesTitle": "No se pudieron comprobar tus dispositivos de almacenamiento",
     "devicesHint": "Vuelve a conectar el lector de tarjetas o la unidad e inténtalo de nuevo.",
     "edlDevicesTitle": "No se pudo buscar dispositivos en modo EDL",
@@ -159,7 +149,6 @@
     "logsStepScan": "Escanea el código o copia el enlace",
     "logsStepIssue": "Abre un issue en GitHub",
     "logsStepPaste": "Pega el enlace y describe el problema",
-    "logsCaption": "Logs de Armbian",
     "openInBrowser": "Abrir en el navegador"
   },
   "error": {
@@ -176,7 +165,6 @@
     "qdlPermissionDenied": "Acceso USB denegado. En Linux, instala las reglas udev: echo 'SUBSYSTEM==\"usb\", ATTR{idVendor}==\"05c6\", ATTR{idProduct}==\"9008\", MODE=\"0666\"' | sudo tee /etc/udev/rules.d/51-qdl.rules && echo 'blacklist qcserial' | sudo tee /etc/modprobe.d/blacklist-qcserial.conf && sudo udevadm control --reload-rules",
     "qdlConnectionFailed": "No se pudo conectar al dispositivo EDL. Asegúrate de que esté en modo EDL y conectado por USB.",
     "qdlAutoconfigFailed": "No se pudo aplicar el perfil de configuración automática a la imagen QDL.",
-    "autoconfigNotArmbian": "Esta imagen no tiene la configuración de primer arranque de Armbian, así que no se puede aplicar el perfil. Grábala sin perfil o elige una imagen de Armbian.",
     "deviceInvalidPath": "No se puede escribir en este dispositivo. Selecciona el dispositivo de nuevo.",
     "deviceNotFound": "El dispositivo seleccionado ya no está conectado. Vuelve a conectarlo y selecciónalo de nuevo.",
     "deviceChanged": "El dispositivo seleccionado ha cambiado desde que lo elegiste. Selecciónalo de nuevo antes de escribir.",
@@ -197,7 +185,6 @@
     "selectError": "No se pudo abrir la imagen seleccionada"
   },
   "armbian": {
-    "description": "Este dispositivo ejecuta Armbian. ¿Quieres preseleccionar esta placa y saltarte los pasos manuales?",
     "cancelHint": "Si cancelas, se desactivará la detección automática de placas.",
     "disabledToast": "Detección automática de placas desactivada. Vuelve a activarla en Ajustes."
   },
@@ -284,7 +271,6 @@
     "allowSystemDevicesDescription": "Arriesgado: puedes sobrescribir el sistema operativo en uso.",
     "armbian": {
       "label": "Detectar placa automáticamente",
-      "description": "Identificar automáticamente la placa de este dispositivo cuando se ejecuta en Armbian",
       "mode_disabled": "Desactivado",
       "mode_modal": "Interactivo",
       "mode_auto": "Silencioso"
@@ -322,19 +308,15 @@
       "nameRequired": "Introduce un nombre de perfil",
       "selectPlaceholder": "Seleccionar…",
       "urlInvalid": "Introduce una URL válida (http o https)",
-      "armbianDefaults": "Valores de Armbian",
       "keys": {
         "checking": "Comprobando las claves...",
-        "found_one": "{{count}} clave encontrada. La placa la descarga en el primer arranque.",
-        "found_other": "{{count}} claves encontradas. La placa las descarga en el primer arranque.",
         "notFoundForge": "No existe ninguna cuenta de {{forge}} con este nombre de usuario.",
         "notFoundLink": "No se ha encontrado nada en este enlace.",
         "noneForge": "Esta cuenta de {{forge}} aún no tiene claves SSH públicas.",
         "noneLink": "Este enlace no sirve claves SSH públicas.",
         "tooLarge": "Esta dirección sirve demasiado contenido para ser una lista de claves públicas.",
         "invalidForge": "Este no es un nombre de usuario de {{forge}} válido.",
-        "invalidLink": "Aquí solo se pueden comprobar enlaces https.",
-        "unreachable": "No se han podido comprobar las claves ahora. La placa las descarga en el primer arranque."
+        "invalidLink": "Aquí solo se pueden comprobar enlaces https."
       },
       "ipInvalid": "Introduce una dirección IPv4 válida (p. ej. 192.168.1.50)",
       "ipNotHost": "Es la dirección de red o de difusión de la subred, no una dirección de dispositivo utilizable. Elige una como 192.168.1.50",
@@ -366,8 +348,6 @@
       "guidedHint": "Una pregunta cada vez",
       "fillForm": "Rellenar el formulario",
       "fillFormHint": "Todas las opciones en una página",
-      "wifiKeyFits": "Válida para Wi-Fi (de 8 a 63 caracteres)",
-      "wifiKeyLength": "Las contraseñas de Wi-Fi suelen tener de 8 a 63 caracteres",
       "wizard": {
         "eyebrow": "Nuevo perfil",
         "unnamed": "Sin nombre todavía",
@@ -391,10 +371,6 @@
           "locale": "Idioma y hora",
           "access": "Acceso",
           "review": "Revisión"
-        },
-        "pending": {
-          "network": "Mantiene los valores de Armbian",
-          "locale": "Valores de Armbian"
         },
         "sum": {
           "keysFrom": "Claves SSH de {{forge}}",
@@ -429,22 +405,17 @@
           "sub": "La cuenta que usas en la placa, para iniciar sesión y para sudo.",
           "now": "Crearlo ahora",
           "later": "En el primer inicio de sesión",
-          "more": "Nombre completo y shell de inicio de sesión",
-          "shellDefault": "Predeterminado de Armbian",
-          "laterLine": "La primera vez que inicies sesión, por SSH o con teclado y monitor, Armbian te pide que crees un usuario. El idioma y la hora de este perfil no se aplican entonces."
+          "more": "Nombre completo y shell de inicio de sesión"
         },
         "locale": {
           "title": "Idioma y hora",
-          "sub": "Se establece en el primer inicio de sesión, se cree o no un usuario ahora.",
           "location": "Según la ubicación",
           "choose": "Elijo yo",
           "language": "Idioma",
-          "searchTimezone": "Buscar zonas horarias",
-          "locationLine": "Armbian establece el idioma y la zona horaria según desde dónde se conecta la placa a internet."
+          "searchTimezone": "Buscar zonas horarias"
         },
         "access": {
           "title": "¿Cómo entras?",
-          "sub": "Las claves SSH te permiten iniciar sesión sin escribir una contraseña.",
           "keys": "Claves SSH",
           "passwordOnly": "Solo contraseña",
           "link": "Enlace",
@@ -457,8 +428,7 @@
           "title": "Listo para crear {{name}}",
           "sub": "Revísalo una vez. Después queda seleccionado en el resumen.",
           "subSettings": "Revísalo una vez. Después aparece en tu lista de perfiles.",
-          "titleEmpty": "Aún no hay nada configurado en {{name}}",
-          "subEmpty": "Todas las áreas mantienen los valores predeterminados de Armbian, así que no hay nada que escribir. Edita una para crearlo."
+          "titleEmpty": "Aún no hay nada configurado en {{name}}"
         }
       },
       "editor": {
@@ -494,22 +464,16 @@
         "netFixed": "Fija, {{ip}}",
         "netAuto": "Dirección automática",
         "whoLogsIn": "Quién inicia sesión",
-        "laterHint": "Armbian lo pregunta en el primer inicio de sesión",
-        "userOk": "Minúsculas, empieza por una letra",
         "userCreatedAs": "Se creará como {{name}}",
-        "userInvalid": "Usa minúsculas, dígitos, - y _",
         "passwordRequired": "Necesaria para iniciar sesión",
         "fullNameRequired": "Necesario para definir el idioma y la zona horaria",
         "fullNameNotSet": "Nombre completo sin definir",
-        "howYouGetIn": "Cómo inicias sesión",
         "passwordLoginHint": "Inicia sesión con tu contraseña",
-        "keysFrom": "Claves de",
         "keyUserRequired": "Introduce un nombre de usuario",
         "keyLinkRequired": "Pega un enlace a las claves públicas",
         "rootSet": "Contraseña de root definida",
         "rootNotSet": "Contraseña de root sin definir",
         "rootPlaceholder": "Sin definir",
-        "rootHint": "Si se deja vacía, Armbian la pide en el primer inicio de sesión",
         "locationHint": "Se define según desde dónde se conecta la placa",
         "remoteHint": "Se aplica en el primer arranque",
         "atFirstBoot": "En el primer arranque",
@@ -517,8 +481,6 @@
         "factBothFixed": "Wi-Fi {{address}}, cable automático",
         "factDhcp": "DHCP",
         "factUser": "Usuario {{name}}",
-        "factKeys_one": "{{count}} clave SSH · {{source}}",
-        "factKeys_other": "{{count}} claves SSH · {{source}}",
         "factKeysMissing": "No se encontraron claves SSH",
         "factTzUnset": "Zona horaria sin definir",
         "sectionsSet": "{{done}} de {{total}} definidas",
@@ -533,7 +495,6 @@
         "createNeedsFix": "Corrige los campos marcados para crearlo",
         "saveNeedsSomething": "Configura al menos una cosa para guardarlo",
         "createNeedsSomething": "Configura al menos una cosa para crearlo",
-        "useDefaults": "Usar valores de Armbian",
         "deleteProfile": "Eliminar perfil",
         "deleteProfileDesc": "Se quita de Imager. Las tarjetas de memoria ya escritas conservan sus ajustes.",
         "discard": "Descartar",
@@ -637,8 +598,7 @@
       "chipWrite": "Escribir",
       "chipVerify": "Verificar",
       "verifyAfter": "Verificar tras escribir",
-      "verifyAfterDesc": "Vuelve a leer el dispositivo y lo compara con la imagen. Tarda más",
-      "detectionUnavailable": "Solo cuando este equipo ejecuta Armbian"
+      "verifyAfterDesc": "Vuelve a leer el dispositivo y lo compara con la imagen. Tarda más"
     },
     "downloads": {
       "lead": "Caché de imágenes y red",
@@ -655,15 +615,13 @@
       "checking": "Comprobando…",
       "website": "Sitio web",
       "reportSub": "Incidencias en GitHub",
-      "support": "Apoyar a Armbian",
       "logsEyebrow": "Registros",
       "sessionLog": "Registro de la sesión",
       "sessionLogDesc": "Registro de esta sesión, para adjuntar a los informes de errores",
       "open": "Abrir",
       "upload": "Subir",
       "sharedLogs": "Registros compartidos",
-      "sharedLogsDesc": "Sube el registro a {{host}} y obtén un enlace para compartir",
-      "credits": "Armbian Imager es software libre, con licencia GPL-2.0-or-later. Creado por la comunidad de Armbian con Tauri {{tauri}}. Banderas de Twemoji, CC-BY 4.0."
+      "sharedLogsDesc": "Sube el registro a {{host}} y obtén un enlace para compartir"
     },
     "profiles": {
       "lead": "Ajustes del primer arranque, que solo se aplican si eliges un perfil",
@@ -686,7 +644,6 @@
     "railDownloading": "Descargando actualización",
     "restartBlocked": "Podrás reiniciar cuando termine la escritura.",
     "retry": "Reintentar",
-    "appVersionAvailable": "Armbian Imager {{version}} está disponible",
     "versionReady": "{{version}} está lista",
     "downloadingVersion": "Descargando {{version}}",
     "transferProgress": "{{done}} de {{total}}",

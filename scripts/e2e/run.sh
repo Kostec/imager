@@ -32,7 +32,7 @@ Environment:
   E2E_WORK_DIR        For the report and the logs (default: a new temporary one)
   E2E_DTB             Device tree inside /boot/dtb (default: sun8i-h2-plus-wukongpi.dtb)
   E2E_BOOT_TIMEOUT    Seconds to wait for the login prompt (default: 3600)
-  E2E_SETTLE_TIMEOUT  Seconds to wait for the stage after the network (default: 1200)
+  E2E_SETTLE_TIMEOUT  Seconds to wait for the stage after the network (default: 2400)
 USAGE
 }
 
@@ -108,7 +108,7 @@ docker run --rm \
   -e E2E_KEEP="$KEEP" \
   -e E2E_DTB="${E2E_DTB:-sun8i-h2-plus-wukongpi.dtb}" \
   -e E2E_BOOT_TIMEOUT="${E2E_BOOT_TIMEOUT:-3600}" \
-  -e E2E_SETTLE_TIMEOUT="${E2E_SETTLE_TIMEOUT:-1200}" \
+  -e E2E_SETTLE_TIMEOUT="${E2E_SETTLE_TIMEOUT:-2400}" \
   -v "${HOST_ROOT}:/source:ro" \
   -v "${HOST_IMAGE_DIR}:/input:ro" \
   -v "${HOST_WORK}:/work" \

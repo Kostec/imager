@@ -2,19 +2,13 @@
   "home": {
     "manufacturer": "メーカー",
     "board": "ボード",
-    "operatingSystem": "OS",
     "storage": "ストレージ",
     "chooseBrand": "ブランドを選択",
     "chooseBoard": "ボードを選択",
-    "chooseOs": "OSを選択",
     "chooseStorage": "ストレージを選択",
     "device": "デバイス",
     "chooseDevice": "デバイスを選択",
-    "welcomeHeading": "Armbian Imager へようこそ",
-    "welcomeIntro": "ボードとイメージを選ぶだけ。ダウンロードからSDカードやUSBドライブへの書き込み、検証まで私たちにお任せください。",
     "startNow": "今すぐ始める",
-    "useCustomImage": "カスタムイメージを使用",
-    "changeCustomImage": "カスタムイメージを変更",
     "changeCachedImage": "キャッシュ済みイメージを変更",
     "imageCount_one": "{{count}} 件のイメージ",
     "imageCount_other": "{{count}} 件のイメージ",
@@ -90,7 +84,6 @@
     "noManufacturers": "メーカーが見つかりません",
     "noBoards": "ボードが見つかりません",
     "boardUpdateRequired": "更新が必要",
-    "boardUpdateRequiredHint": "このボードはこのバージョンの Armbian Imager ではサポートされていません。更新してください。",
     "noImages": "イメージが見つかりません",
     "noImagesHint": "このボードのイメージは現在公開されていません。",
     "noDevices": "デバイスが見つかりません",
@@ -141,12 +134,9 @@
     "uploadLogsForSupport": "サポート用にログをアップロード",
     "viewLogs": "ログを表示",
     "scanQrOrShare": "QRコードを読み取るか、このリンクを共有してください：",
-    "serverTitle": "Armbianのサーバーが応答しません",
     "serverHint": "お使いの接続の問題ではありません。数分後にもう一度お試しください。",
-    "networkTitle": "Armbianに接続できません",
     "networkHint": "インターネット接続を確認するか、数分後にもう一度お試しください。",
     "otherTitle": "この一覧を読み込めませんでした",
-    "otherHint": "もう一度お試しください。繰り返し発生する場合は、Armbianチームが調べられるようにログをアップロードしてください。",
     "devicesTitle": "ストレージデバイスを確認できませんでした",
     "devicesHint": "カードリーダーまたはドライブを接続し直してから、もう一度お試しください。",
     "edlDevicesTitle": "EDLモードのデバイスを検索できませんでした",
@@ -159,7 +149,6 @@
     "logsStepScan": "コードを読み取るか、リンクをコピー",
     "logsStepIssue": "GitHubでIssueを作成",
     "logsStepPaste": "リンクを貼り付けて問題を説明",
-    "logsCaption": "Armbian ログ",
     "openInBrowser": "ブラウザで開く"
   },
   "error": {
@@ -176,7 +165,6 @@
     "qdlPermissionDenied": "USBへのアクセスが拒否されました。Linuxでは次のudevルールをインストールしてください： echo 'SUBSYSTEM==\"usb\", ATTR{idVendor}==\"05c6\", ATTR{idProduct}==\"9008\", MODE=\"0666\"' | sudo tee /etc/udev/rules.d/51-qdl.rules && echo 'blacklist qcserial' | sudo tee /etc/modprobe.d/blacklist-qcserial.conf && sudo udevadm control --reload-rules",
     "qdlConnectionFailed": "EDLデバイスに接続できませんでした。EDLモードになっていて、USBで接続されていることを確認してください。",
     "qdlAutoconfigFailed": "自動設定プロファイルをQDLイメージに適用できませんでした。",
-    "autoconfigNotArmbian": "このイメージにはArmbianの初回起動セットアップがないため、プロファイルを適用できません。プロファイルなしで書き込むか、Armbianのイメージを選んでください。",
     "deviceInvalidPath": "このデバイスには書き込めません。デバイスを選択し直してください。",
     "deviceNotFound": "選択したデバイスは接続されていません。接続し直してから、もう一度選択してください。",
     "deviceChanged": "選択したデバイスが選択後に変更されました。書き込む前にもう一度選択してください。",
@@ -197,7 +185,6 @@
     "selectError": "選択したイメージを開けませんでした"
   },
   "armbian": {
-    "description": "このデバイスではArmbianが動作しています。このボードをあらかじめ選択して、手動の手順を省略しますか？",
     "cancelHint": "キャンセルすると、ボードの自動検出がオフになります。",
     "disabledToast": "ボードの自動検出をオフにしました。設定からもう一度オンにできます。"
   },
@@ -284,7 +271,6 @@
     "allowSystemDevicesDescription": "危険：実行中のOSを上書きする可能性があります。",
     "armbian": {
       "label": "ボードを自動検出",
-      "description": "このデバイスでArmbianが動作しているときに、ボードを自動的に識別します",
       "mode_disabled": "無効",
       "mode_modal": "対話型",
       "mode_auto": "サイレント"
@@ -322,19 +308,15 @@
       "nameRequired": "プロファイル名を入力してください",
       "selectPlaceholder": "選択…",
       "urlInvalid": "有効なURLを入力してください（http または https）",
-      "armbianDefaults": "Armbianの既定値",
       "keys": {
         "checking": "キーを確認しています...",
-        "found_one": "{{count}}件のキーが見つかりました。ボードが初回起動時に取得します。",
-        "found_other": "{{count}}件のキーが見つかりました。ボードが初回起動時に取得します。",
         "notFoundForge": "このユーザー名の{{forge}}アカウントはありません。",
         "notFoundLink": "このリンクでは何も見つかりませんでした。",
         "noneForge": "この{{forge}}アカウントには公開SSHキーがまだありません。",
         "noneLink": "このリンクは公開SSHキーを返していません。",
         "tooLarge": "このアドレスは、公開キーの一覧にしては大きすぎるデータを返しています。",
         "invalidForge": "有効な{{forge}}のユーザー名ではありません。",
-        "invalidLink": "ここで確認できるのはhttpsのリンクだけです。",
-        "unreachable": "今はキーを確認できません。ボードが初回起動時に取得します。"
+        "invalidLink": "ここで確認できるのはhttpsのリンクだけです。"
       },
       "ipInvalid": "有効なIPv4アドレスを入力してください（例: 192.168.1.50）",
       "ipNotHost": "これはサブネットのネットワークアドレスまたはブロードキャストアドレスで、デバイスには使えません。192.168.1.50 のようなアドレスを指定してください",
@@ -366,8 +348,6 @@
       "guidedHint": "質問に一つずつ答えます",
       "fillForm": "フォームに入力",
       "fillFormHint": "すべてのオプションを1ページで",
-      "wifiKeyFits": "Wi-Fiに使えます（8文字から63文字）",
-      "wifiKeyLength": "Wi-Fiのパスワードは通常8文字から63文字です",
       "wizard": {
         "eyebrow": "新しいプロファイル",
         "unnamed": "名前未設定",
@@ -391,10 +371,6 @@
           "locale": "言語と時刻",
           "access": "アクセス",
           "review": "確認"
-        },
-        "pending": {
-          "network": "Armbianの既定値のまま",
-          "locale": "Armbianの既定値"
         },
         "sum": {
           "keysFrom": "{{forge}}のSSHキー",
@@ -429,22 +405,17 @@
           "sub": "ボードで使うアカウントです。ログインとsudoに使います。",
           "now": "今すぐ作成",
           "later": "初回ログイン時",
-          "more": "フルネームとログインシェル",
-          "shellDefault": "Armbianの既定",
-          "laterLine": "初回ログイン時に、SSH、またはキーボードとモニターで、Armbianがユーザーの作成を求めます。そのとき、このプロファイルの言語と時刻は適用されません。"
+          "more": "フルネームとログインシェル"
         },
         "locale": {
           "title": "言語と時刻",
-          "sub": "初回ログイン時に設定されます。ユーザーを今作成するかどうかは関係ありません。",
           "location": "位置情報から",
           "choose": "自分で選ぶ",
           "language": "言語",
-          "searchTimezone": "タイムゾーンを検索",
-          "locationLine": "Armbianは、ボードがインターネットに接続した場所から言語とタイムゾーンを設定します。"
+          "searchTimezone": "タイムゾーンを検索"
         },
         "access": {
           "title": "どうやって入りますか？",
-          "sub": "SSHキーがあれば、パスワードを入力せずにログインできます。",
           "keys": "SSHキー",
           "passwordOnly": "パスワードのみ",
           "link": "リンク",
@@ -457,8 +428,7 @@
           "title": "{{name}}を作成する準備ができました",
           "sub": "一度確認してください。そのあと概要画面で選択されます。",
           "subSettings": "一度確認してください。そのあとプロファイル一覧に表示されます。",
-          "titleEmpty": "{{name}} にはまだ何も設定されていません",
-          "subEmpty": "すべての項目がArmbianの既定値のままのため、書き込む内容がありません。いずれかを編集すると作成できます。"
+          "titleEmpty": "{{name}} にはまだ何も設定されていません"
         }
       },
       "editor": {
@@ -494,22 +464,16 @@
         "netFixed": "固定、{{ip}}",
         "netAuto": "自動アドレス",
         "whoLogsIn": "ログインするユーザー",
-        "laterHint": "初回ログイン時にArmbianが確認します",
-        "userOk": "小文字、先頭は英字",
         "userCreatedAs": "{{name}} として作成",
-        "userInvalid": "小文字の英字、数字、- と _ を使ってください",
         "passwordRequired": "ログインに必要です",
         "fullNameRequired": "言語とタイムゾーンの設定に必要です",
         "fullNameNotSet": "フルネーム未設定",
-        "howYouGetIn": "ログイン方法",
         "passwordLoginHint": "パスワードでログインします",
-        "keysFrom": "キーの取得元",
         "keyUserRequired": "ユーザー名を入力してください",
         "keyLinkRequired": "公開キーへのリンクを貼り付けてください",
         "rootSet": "rootパスワード設定済み",
         "rootNotSet": "rootパスワード未設定",
         "rootPlaceholder": "未設定",
-        "rootHint": "空欄の場合、初回ログイン時にArmbianが確認します",
         "locationHint": "ボードが接続した場所から設定されます",
         "remoteHint": "初回起動時に適用されます",
         "atFirstBoot": "初回起動時",
@@ -517,8 +481,6 @@
         "factBothFixed": "Wi-Fi {{address}}、ケーブルは自動",
         "factDhcp": "DHCP",
         "factUser": "ユーザー {{name}}",
-        "factKeys_one": "SSHキー {{count}} 件 · {{source}}",
-        "factKeys_other": "SSHキー {{count}} 件 · {{source}}",
         "factKeysMissing": "SSHキーが見つかりません",
         "factTzUnset": "タイムゾーン未設定",
         "sectionsSet": "{{done}} / {{total}} 設定済み",
@@ -533,7 +495,6 @@
         "createNeedsFix": "マークされた項目を修正すると作成できます",
         "saveNeedsSomething": "1つ以上設定すると保存できます",
         "createNeedsSomething": "1つ以上設定すると作成できます",
-        "useDefaults": "Armbianの既定値を使う",
         "deleteProfile": "プロファイルを削除",
         "deleteProfileDesc": "Imager から削除します。書き込み済みのSDカードなどの設定は変わりません。",
         "discard": "破棄",
@@ -637,8 +598,7 @@
       "chipWrite": "書き込み",
       "chipVerify": "検証",
       "verifyAfter": "書き込み後に検証",
-      "verifyAfterDesc": "デバイスを読み戻してイメージと比較します。時間がかかります",
-      "detectionUnavailable": "このコンピューターでArmbianが動作している場合のみ"
+      "verifyAfterDesc": "デバイスを読み戻してイメージと比較します。時間がかかります"
     },
     "downloads": {
       "lead": "イメージキャッシュとネットワーク",
@@ -655,15 +615,13 @@
       "checking": "確認中…",
       "website": "ウェブサイト",
       "reportSub": "GitHubのIssue",
-      "support": "Armbianを支援",
       "logsEyebrow": "ログ",
       "sessionLog": "セッションログ",
       "sessionLogDesc": "このセッションのログ。バグ報告に添付できます",
       "open": "開く",
       "upload": "アップロード",
       "sharedLogs": "共有ログ",
-      "sharedLogsDesc": "ログを{{host}}にアップロードし、共有用のリンクを取得します",
-      "credits": "Armbian ImagerはGPL-2.0-or-laterでライセンスされたフリーソフトウェアです。Armbianコミュニティが Tauri {{tauri}} で開発しました。国旗は Twemoji、CC-BY 4.0。"
+      "sharedLogsDesc": "ログを{{host}}にアップロードし、共有用のリンクを取得します"
     },
     "profiles": {
       "lead": "初回起動の設定。プロファイルを選んだときだけ適用されます",
@@ -686,7 +644,6 @@
     "railDownloading": "更新をダウンロード中",
     "restartBlocked": "書き込みが完了すると再起動できます。",
     "retry": "再試行",
-    "appVersionAvailable": "Armbian Imager {{version}} が利用可能です",
     "versionReady": "{{version}} の準備ができました",
     "downloadingVersion": "{{version}} をダウンロード中",
     "transferProgress": "{{done}} / {{total}}",

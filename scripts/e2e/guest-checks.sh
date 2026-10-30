@@ -54,9 +54,17 @@ sshd_value() { [[ $(/usr/sbin/sshd -T | sed -n "s/^$1 //p") == "$2" ]]; }
 
 log_has_no_secret() {
 	[[ -s $WK_LOG ]] || return 1
-	! grep -qF -e "$E2E_PASSWORD" -e "$E2E_USER_HASH" -e "$E2E_WIFI_PSK" -e "$E2E_KEY_BODY" "$WK_LOG"
+	! grep -qF -e "$E2E_PASSWORD" -e "$E2E_USER_HASH" -e "$E2E_WIFI_PSK" -e "$E2E_KEY_BODY" -e "$E2E_WIFI_SSID" "$WK_LOG"
 }
 log_has_summary() { grep -q 'firstboot: finished' "$WK_LOG" && grep -q 'post-network: finished' "$WK_LOG"; }
+log_has_avahi() { grep -q 'post-network: OK avahi-daemon installed' "$WK_LOG"; }
+
+# QEMU has no Wi-Fi adapter, so the line has to say that, and not just that something failed.
+log_names_wifi_failure() {
+	local line
+	line=$(grep -m1 'post-network: FAIL wifi: ' "$WK_LOG") || return 1
+	! nmcli -t -f TYPE device | grep -qx wifi && [[ $line == *'no Wi-Fi device in NetworkManager, connection inactive' ]]
+}
 
 # The monotonic time of the first journal line of a unit that matches a pattern.
 first_seen() {
@@ -104,13 +112,18 @@ printf 'INFO order: firstboot done %s, NetworkManager %s, ssh %s, login prompt %
 ' 	"$(first_seen armbian-firstrun.service 'Started ')" "$(first_seen NetworkManager.service 'Starting ')" 	"$(first_seen ssh.service 'Starting ')" "$(first_seen serial-getty@ttyS0.service 'Started ')"
 check 'boot: no extra reboot' one_boot
 check 'log: has the summary' log_has_summary
-check 'log: no password, hash, key' log_has_no_secret
+check 'log: no password, hash, key, SSID' log_has_no_secret
+check 'log: the cause of the Wi-Fi failure' log_names_wifi_failure
+check 'avahi: installed, says the log' log_has_avahi
+check 'avahi: daemon runs' systemctl is-active --quiet avahi-daemon
 
-# name.local depends on apt and the internet: reported, but not what the settings are judged by.
-if [[ $(systemctl is-active avahi-daemon) == active ]]; then
-	printf 'PASS avahi: daemon runs\n'
+# Without armbian-ramlog the log is on the card anyway, and the power cut below proves nothing about the copy.
+if [[ $(findmnt -no TARGET /var/log) == /var/log ]]; then
+	printf 'INFO log: /var/log is in RAM
+'
 else
-	printf 'WARN avahi: daemon does not run\n'
+	printf 'WARN log: armbian-ramlog is not active, /var/log is on the card
+'
 fi
 
 printf 'INFO log follows\n'

@@ -2,19 +2,13 @@
   "home": {
     "manufacturer": "Hersteller",
     "board": "Board",
-    "operatingSystem": "Betriebssystem",
     "storage": "Speicher",
     "chooseBrand": "Marke wählen",
     "chooseBoard": "Board wählen",
-    "chooseOs": "OS wählen",
     "chooseStorage": "Speicher wählen",
     "device": "Gerät",
     "chooseDevice": "Gerät wählen",
-    "welcomeHeading": "Willkommen bei Armbian Imager",
-    "welcomeIntro": "Wähle dein Board und ein Image. Wir laden es herunter, schreiben es auf deine SD-Karte oder deinen USB-Stick und prüfen es für dich.",
     "startNow": "Jetzt starten",
-    "useCustomImage": "Eigenes Image verwenden",
-    "changeCustomImage": "Eigenes Image ändern",
     "changeCachedImage": "Zwischengespeichertes Image ändern",
     "imageCount_one": "{{count}} Image",
     "imageCount_other": "{{count}} Images",
@@ -90,7 +84,6 @@
     "noManufacturers": "Keine Hersteller gefunden",
     "noBoards": "Keine Boards gefunden",
     "boardUpdateRequired": "Update erforderlich",
-    "boardUpdateRequiredHint": "Dieses Board wird von dieser Version von Armbian Imager nicht unterstützt. Bitte aktualisieren.",
     "noImages": "Keine Images gefunden",
     "noImagesHint": "Für dieses Board sind derzeit keine Images veröffentlicht.",
     "noDevices": "Keine Geräte gefunden",
@@ -141,12 +134,9 @@
     "uploadLogsForSupport": "Logs für Support hochladen",
     "viewLogs": "Logs anzeigen",
     "scanQrOrShare": "QR scannen oder Link teilen:",
-    "serverTitle": "Die Armbian-Server antworten nicht",
     "serverHint": "Das liegt nicht an deiner Verbindung. Versuche es in ein paar Minuten erneut.",
-    "networkTitle": "Armbian ist nicht erreichbar",
     "networkHint": "Prüfe deine Internetverbindung oder versuche es in ein paar Minuten erneut.",
     "otherTitle": "Diese Liste konnte nicht geladen werden",
-    "otherHint": "Versuche es erneut. Wenn es weiter auftritt, lade die Logs hoch, damit das Armbian-Team es prüfen kann.",
     "devicesTitle": "Speichergeräte konnten nicht geprüft werden",
     "devicesHint": "Verbinde den Kartenleser oder das Laufwerk neu und versuche es erneut.",
     "edlDevicesTitle": "Suche nach Geräten im EDL-Modus fehlgeschlagen",
@@ -159,7 +149,6 @@
     "logsStepScan": "Code scannen oder Link kopieren",
     "logsStepIssue": "Issue auf GitHub öffnen",
     "logsStepPaste": "Link einfügen und Problem beschreiben",
-    "logsCaption": "Armbian-Logs",
     "openInBrowser": "Im Browser öffnen"
   },
   "error": {
@@ -176,7 +165,6 @@
     "qdlPermissionDenied": "USB-Zugriff verweigert. Installiere unter Linux die udev-Regeln: echo 'SUBSYSTEM==\"usb\", ATTR{idVendor}==\"05c6\", ATTR{idProduct}==\"9008\", MODE=\"0666\"' | sudo tee /etc/udev/rules.d/51-qdl.rules && echo 'blacklist qcserial' | sudo tee /etc/modprobe.d/blacklist-qcserial.conf && sudo udevadm control --reload-rules",
     "qdlConnectionFailed": "Verbindung zum EDL-Gerät fehlgeschlagen. Stelle sicher, dass es im EDL-Modus ist und per USB verbunden ist.",
     "qdlAutoconfigFailed": "Das Autoconfig-Profil konnte nicht auf das QDL-Image angewendet werden.",
-    "autoconfigNotArmbian": "Dieses Image enthält keine Armbian-Ersteinrichtung, daher kann das Profil nicht angewendet werden. Flashe es ohne Profil oder wähle ein Armbian-Image.",
     "deviceInvalidPath": "Auf dieses Gerät kann nicht geschrieben werden. Wähle das Gerät erneut aus.",
     "deviceNotFound": "Das ausgewählte Gerät ist nicht mehr verbunden. Verbinde es erneut und wähle es noch einmal aus.",
     "deviceChanged": "Das ausgewählte Gerät hat sich seit der Auswahl geändert. Wähle es vor dem Schreiben erneut aus.",
@@ -197,7 +185,6 @@
     "selectError": "Das ausgewählte Image konnte nicht geöffnet werden"
   },
   "armbian": {
-    "description": "Dieses Gerät läuft mit Armbian. Möchtest du dieses Board vorauswählen und die manuellen Schritte überspringen?",
     "cancelHint": "Wenn du abbrichst, wird die automatische Board-Erkennung deaktiviert.",
     "disabledToast": "Board-Erkennung deaktiviert. Du kannst sie in den Einstellungen wieder aktivieren."
   },
@@ -284,7 +271,6 @@
     "allowSystemDevicesDescription": "Riskant: das laufende Betriebssystem kann überschrieben werden.",
     "armbian": {
       "label": "Board automatisch erkennen",
-      "description": "Das Board automatisch erkennen, wenn dieses Gerät mit Armbian läuft",
       "mode_disabled": "Deaktiviert",
       "mode_modal": "Interaktiv",
       "mode_auto": "Automatisch"
@@ -322,19 +308,15 @@
       "nameRequired": "Gib einen Profilnamen ein",
       "selectPlaceholder": "Auswählen…",
       "urlInvalid": "Gib eine gültige URL ein (http oder https)",
-      "armbianDefaults": "Armbian-Standardwerte",
       "keys": {
         "checking": "Schlüssel werden geprüft...",
-        "found_one": "{{count}} Schlüssel gefunden. Das Board holt ihn beim ersten Start ab.",
-        "found_other": "{{count}} Schlüssel gefunden. Das Board holt sie beim ersten Start ab.",
         "notFoundForge": "Kein {{forge}}-Konto mit diesem Benutzernamen.",
         "notFoundLink": "Unter diesem Link wurde nichts gefunden.",
         "noneForge": "Dieses {{forge}}-Konto hat noch keine öffentlichen SSH-Schlüssel.",
         "noneLink": "Dieser Link liefert keine öffentlichen SSH-Schlüssel.",
         "tooLarge": "Diese Adresse liefert zu viel für eine Liste öffentlicher Schlüssel.",
         "invalidForge": "Das ist kein gültiger {{forge}}-Benutzername.",
-        "invalidLink": "Hier lassen sich nur https-Links prüfen.",
-        "unreachable": "Die Schlüssel lassen sich gerade nicht prüfen. Das Board holt sie beim ersten Start ab."
+        "invalidLink": "Hier lassen sich nur https-Links prüfen."
       },
       "ipInvalid": "Gib eine gültige IPv4-Adresse ein (z. B. 192.168.1.50)",
       "ipNotHost": "Das ist die Netz- oder Broadcast-Adresse des Subnetzes, keine nutzbare Geräteadresse. Wähle eine wie 192.168.1.50",
@@ -366,8 +348,6 @@
       "guidedHint": "Eine Frage nach der anderen",
       "fillForm": "Formular ausfüllen",
       "fillFormHint": "Alle Optionen auf einer Seite",
-      "wifiKeyFits": "Passt für WLAN (8 bis 63 Zeichen)",
-      "wifiKeyLength": "WLAN-Passwörter haben meist 8 bis 63 Zeichen",
       "wizard": {
         "eyebrow": "Neues Profil",
         "unnamed": "Noch kein Name",
@@ -391,10 +371,6 @@
           "locale": "Sprache und Zeit",
           "access": "Zugang",
           "review": "Überprüfen"
-        },
-        "pending": {
-          "network": "Behält die Armbian-Standardwerte",
-          "locale": "Armbian-Standardwerte"
         },
         "sum": {
           "keysFrom": "SSH-Schlüssel von {{forge}}",
@@ -429,22 +405,17 @@
           "sub": "Das Konto, das du auf dem Board nutzt, für die Anmeldung und für sudo.",
           "now": "Jetzt erstellen",
           "later": "Bei der ersten Anmeldung",
-          "more": "Vollständiger Name und Anmelde-Shell",
-          "shellDefault": "Armbian-Standard",
-          "laterLine": "Bei der ersten Anmeldung, per SSH oder mit Tastatur und Monitor, fordert Armbian dich auf, einen Benutzer zu erstellen. Sprache und Zeit aus diesem Profil werden dann nicht angewendet."
+          "more": "Vollständiger Name und Anmelde-Shell"
         },
         "locale": {
           "title": "Sprache und Zeit",
-          "sub": "Wird bei der ersten Anmeldung festgelegt, egal ob jetzt ein Benutzer erstellt wird.",
           "location": "Vom Standort",
           "choose": "Ich wähle",
           "language": "Sprache",
-          "searchTimezone": "Zeitzonen suchen",
-          "locationLine": "Armbian legt Sprache und Zeitzone danach fest, von wo sich das Board mit dem Internet verbindet."
+          "searchTimezone": "Zeitzonen suchen"
         },
         "access": {
           "title": "Wie kommst du rein?",
-          "sub": "Mit SSH-Schlüsseln meldest du dich an, ohne ein Passwort einzutippen.",
           "keys": "SSH-Schlüssel",
           "passwordOnly": "Nur Passwort",
           "link": "Link",
@@ -457,8 +428,7 @@
           "title": "Bereit, {{name}} zu erstellen",
           "sub": "Prüfe es einmal. Dann ist es in der Zusammenfassung ausgewählt.",
           "subSettings": "Prüfe es einmal. Dann erscheint es in deiner Profilliste.",
-          "titleEmpty": "In {{name}} ist noch nichts festgelegt",
-          "subEmpty": "Jeder Bereich behält die Armbian-Standardwerte, also gibt es nichts zu schreiben. Bearbeite einen Bereich, um es zu erstellen."
+          "titleEmpty": "In {{name}} ist noch nichts festgelegt"
         }
       },
       "editor": {
@@ -494,22 +464,16 @@
         "netFixed": "Fest, {{ip}}",
         "netAuto": "Automatische Adresse",
         "whoLogsIn": "Wer sich anmeldet",
-        "laterHint": "Armbian fragt bei der ersten Anmeldung",
-        "userOk": "Kleinbuchstaben, beginnt mit einem Buchstaben",
         "userCreatedAs": "Erstellt als {{name}}",
-        "userInvalid": "Verwende Kleinbuchstaben, Ziffern, - und _",
         "passwordRequired": "Nötig für die Anmeldung",
         "fullNameRequired": "Nötig, um Sprache und Zeitzone festzulegen",
         "fullNameNotSet": "Vollständiger Name nicht festgelegt",
-        "howYouGetIn": "Wie du dich anmeldest",
         "passwordLoginHint": "Mit deinem Passwort anmelden",
-        "keysFrom": "Schlüssel von",
         "keyUserRequired": "Gib einen Benutzernamen ein",
         "keyLinkRequired": "Füge einen Link zu den öffentlichen Schlüsseln ein",
         "rootSet": "Root-Passwort festgelegt",
         "rootNotSet": "Root-Passwort nicht festgelegt",
         "rootPlaceholder": "Nicht festgelegt",
-        "rootHint": "Wenn leer, fragt Armbian bei der ersten Anmeldung danach",
         "locationHint": "Wird danach festgelegt, von wo sich das Board verbindet",
         "remoteHint": "Wird beim ersten Start angewendet",
         "atFirstBoot": "Beim ersten Start",
@@ -517,8 +481,6 @@
         "factBothFixed": "WLAN {{address}}, Kabel automatisch",
         "factDhcp": "DHCP",
         "factUser": "Benutzer {{name}}",
-        "factKeys_one": "{{count}} SSH-Schlüssel · {{source}}",
-        "factKeys_other": "{{count}} SSH-Schlüssel · {{source}}",
         "factKeysMissing": "SSH-Schlüssel nicht gefunden",
         "factTzUnset": "Zeitzone nicht festgelegt",
         "sectionsSet": "{{done}} von {{total}} festgelegt",
@@ -533,7 +495,6 @@
         "createNeedsFix": "Korrigiere die markierten Felder, um es zu erstellen",
         "saveNeedsSomething": "Lege mindestens eine Sache fest, um zu speichern",
         "createNeedsSomething": "Lege mindestens eine Sache fest, um es zu erstellen",
-        "useDefaults": "Armbian-Standardwerte verwenden",
         "deleteProfile": "Profil löschen",
         "deleteProfileDesc": "Wird aus Imager entfernt. Bereits beschriebene Speicherkarten behalten ihre Einstellungen.",
         "discard": "Verwerfen",
@@ -637,8 +598,7 @@
       "chipWrite": "Schreiben",
       "chipVerify": "Überprüfen",
       "verifyAfter": "Nach dem Schreiben überprüfen",
-      "verifyAfterDesc": "Liest das Gerät zurück und vergleicht es mit dem Image. Dauert länger",
-      "detectionUnavailable": "Nur wenn dieser Computer Armbian ausführt"
+      "verifyAfterDesc": "Liest das Gerät zurück und vergleicht es mit dem Image. Dauert länger"
     },
     "downloads": {
       "lead": "Image-Cache und Netzwerk",
@@ -655,15 +615,13 @@
       "checking": "Wird geprüft…",
       "website": "Website",
       "reportSub": "GitHub Issues",
-      "support": "Armbian unterstützen",
       "logsEyebrow": "Protokolle",
       "sessionLog": "Sitzungsprotokoll",
       "sessionLogDesc": "Protokoll dieser Sitzung, zum Anhängen an Fehlerberichte",
       "open": "Öffnen",
       "upload": "Hochladen",
       "sharedLogs": "Geteilte Protokolle",
-      "sharedLogsDesc": "Das Protokoll auf {{host}} hochladen und einen Link zum Teilen erhalten",
-      "credits": "Armbian Imager ist freie Software unter der GPL-2.0-or-later. Entwickelt von der Armbian-Community mit Tauri {{tauri}}. Flaggen von Twemoji, CC-BY 4.0."
+      "sharedLogsDesc": "Das Protokoll auf {{host}} hochladen und einen Link zum Teilen erhalten"
     },
     "profiles": {
       "lead": "Einstellungen für den ersten Start, nur angewendet, wenn du ein Profil auswählst",
@@ -686,7 +644,6 @@
     "railDownloading": "Update wird heruntergeladen",
     "restartBlocked": "Du kannst neu starten, sobald das Flashen abgeschlossen ist.",
     "retry": "Erneut versuchen",
-    "appVersionAvailable": "Armbian Imager {{version}} ist verfügbar",
     "versionReady": "{{version}} ist bereit",
     "downloadingVersion": "{{version}} wird heruntergeladen",
     "transferProgress": "{{done}} von {{total}}",

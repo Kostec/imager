@@ -2,19 +2,13 @@
   "home": {
     "manufacturer": "Üretici",
     "board": "Kart",
-    "operatingSystem": "İşletim Sistemi",
     "storage": "Depolama",
     "chooseBrand": "Marka seç",
     "chooseBoard": "Kart seç",
-    "chooseOs": "İşletim sistemi seç",
     "chooseStorage": "Depolama seç",
     "device": "Cihaz",
     "chooseDevice": "Cihaz seç",
-    "welcomeHeading": "Armbian Imager'a hoş geldiniz",
-    "welcomeIntro": "Kartınızı ve bir imajı seçin. İndirme, SD karta ya da USB sürücüye yazma ve doğrulama işini biz hallederiz.",
     "startNow": "Hemen başla",
-    "useCustomImage": "Özel imaj kullan",
-    "changeCustomImage": "Özel imajı değiştir",
     "changeCachedImage": "Önbellekteki imajı değiştir",
     "imageCount_one": "{{count}} imaj",
     "imageCount_other": "{{count}} imaj",
@@ -90,7 +84,6 @@
     "noManufacturers": "Üretici bulunamadı",
     "noBoards": "Kart bulunamadı",
     "boardUpdateRequired": "Güncelleme gerekli",
-    "boardUpdateRequiredHint": "Bu kart bu Armbian Imager sürümü tarafından desteklenmiyor. Lütfen güncelleyin.",
     "noImages": "İmaj bulunamadı",
     "noImagesHint": "Bu kart için şu anda yayımlanmış imaj yok.",
     "noDevices": "Cihaz bulunamadı",
@@ -141,12 +134,9 @@
     "uploadLogsForSupport": "Destek için günlükleri yükle",
     "viewLogs": "Günlükleri Görüntüle",
     "scanQrOrShare": "QR tarayın veya bu bağlantıyı paylaşın:",
-    "serverTitle": "Armbian sunucuları yanıt vermiyor",
     "serverHint": "Sorun sizin bağlantınızda değil. Birkaç dakika sonra tekrar deneyin.",
-    "networkTitle": "Armbian'a ulaşılamıyor",
     "networkHint": "İnternet bağlantınızı kontrol edin veya birkaç dakika sonra tekrar deneyin.",
     "otherTitle": "Bu liste yüklenemedi",
-    "otherHint": "Tekrar deneyin. Sorun devam ederse Armbian ekibi inceleyebilsin diye günlükleri yükleyin.",
     "devicesTitle": "Depolama cihazlarınız kontrol edilemedi",
     "devicesHint": "Kart okuyucuyu veya sürücüyü yeniden bağlayıp tekrar deneyin.",
     "edlDevicesTitle": "EDL modundaki cihazlar aranamadı",
@@ -159,7 +149,6 @@
     "logsStepScan": "Kodu tarayın veya bağlantıyı kopyalayın",
     "logsStepIssue": "GitHub'da bir issue açın",
     "logsStepPaste": "Bağlantıyı yapıştırın ve sorunu anlatın",
-    "logsCaption": "Armbian günlükleri",
     "openInBrowser": "Tarayıcıda aç"
   },
   "error": {
@@ -176,7 +165,6 @@
     "qdlPermissionDenied": "USB erişimi reddedildi. Linux'ta udev kurallarını yükleyin: echo 'SUBSYSTEM==\"usb\", ATTR{idVendor}==\"05c6\", ATTR{idProduct}==\"9008\", MODE=\"0666\"' | sudo tee /etc/udev/rules.d/51-qdl.rules && echo 'blacklist qcserial' | sudo tee /etc/modprobe.d/blacklist-qcserial.conf && sudo udevadm control --reload-rules",
     "qdlConnectionFailed": "EDL cihazına bağlanılamadı. Cihazın EDL modunda olduğundan ve USB ile bağlı olduğundan emin olun.",
     "qdlAutoconfigFailed": "Otomatik yapılandırma profili QDL imajına uygulanamadı.",
-    "autoconfigNotArmbian": "Bu imajda Armbian ilk açılış kurulumu yok, bu yüzden profil uygulanamaz. Profilsiz yazın veya bir Armbian imajı seçin.",
     "deviceInvalidPath": "Bu cihaza yazılamıyor. Cihazı yeniden seçin.",
     "deviceNotFound": "Seçilen cihaz artık bağlı değil. Yeniden bağlayıp tekrar seçin.",
     "deviceChanged": "Seçtiğinizden beri seçilen cihaz değişti. Yazmadan önce cihazı yeniden seçin.",
@@ -197,7 +185,6 @@
     "selectError": "Seçilen imaj açılamadı"
   },
   "armbian": {
-    "description": "Bu cihaz Armbian çalıştırıyor. Bu kartı önceden seçip manuel adımları atlamak ister misiniz?",
     "cancelHint": "İptal ederseniz kart otomatik algılama kapanır.",
     "disabledToast": "Kart otomatik algılama devre dışı bırakıldı. Ayarlar'dan yeniden açabilirsiniz."
   },
@@ -284,7 +271,6 @@
     "allowSystemDevicesDescription": "Riskli: çalışan işletim sistemini üzerine yazabilirsiniz.",
     "armbian": {
       "label": "Kartı otomatik algıla",
-      "description": "Bu cihaz Armbian çalıştırırken kartı otomatik olarak tanımla",
       "mode_disabled": "Devre dışı",
       "mode_modal": "Etkileşimli",
       "mode_auto": "Sessiz"
@@ -322,19 +308,15 @@
       "nameRequired": "Bir profil adı girin",
       "selectPlaceholder": "Seç…",
       "urlInvalid": "Geçerli bir URL girin (http veya https)",
-      "armbianDefaults": "Armbian varsayılanları",
       "keys": {
         "checking": "Anahtarlar denetleniyor...",
-        "found_one": "{{count}} anahtar bulundu. Kart bunu ilk açılışta alır.",
-        "found_other": "{{count}} anahtar bulundu. Kart bunları ilk açılışta alır.",
         "notFoundForge": "Bu kullanıcı adına sahip bir {{forge}} hesabı yok.",
         "notFoundLink": "Bu bağlantıda hiçbir şey bulunamadı.",
         "noneForge": "Bu {{forge}} hesabında henüz açık SSH anahtarı yok.",
         "noneLink": "Bu bağlantı açık SSH anahtarı sunmuyor.",
         "tooLarge": "Bu adres, açık anahtar listesi olamayacak kadar fazla veri sunuyor.",
         "invalidForge": "Bu geçerli bir {{forge}} kullanıcı adı değil.",
-        "invalidLink": "Burada yalnızca https bağlantıları denetlenebilir.",
-        "unreachable": "Anahtarlar şu anda denetlenemiyor. Kart bunları ilk açılışta alır."
+        "invalidLink": "Burada yalnızca https bağlantıları denetlenebilir."
       },
       "ipInvalid": "Geçerli bir IPv4 adresi girin (örn. 192.168.1.50)",
       "ipNotHost": "Bu, alt ağın ağ veya yayın (broadcast) adresidir, cihaz için kullanılabilir bir adres değildir. 192.168.1.50 gibi bir adres seçin",
@@ -366,8 +348,6 @@
       "guidedHint": "Her seferinde bir soru",
       "fillForm": "Formu doldur",
       "fillFormHint": "Tüm seçenekler tek sayfada",
-      "wifiKeyFits": "Wi-Fi için uygun (8 ile 63 karakter)",
-      "wifiKeyLength": "Wi-Fi parolaları genellikle 8 ile 63 karakter uzunluğundadır",
       "wizard": {
         "eyebrow": "Yeni profil",
         "unnamed": "Henüz ad yok",
@@ -391,10 +371,6 @@
           "locale": "Dil ve saat",
           "access": "Erişim",
           "review": "Gözden geçir"
-        },
-        "pending": {
-          "network": "Armbian varsayılanlarını korur",
-          "locale": "Armbian varsayılanları"
         },
         "sum": {
           "keysFrom": "{{forge}} üzerinden SSH anahtarları",
@@ -429,22 +405,17 @@
           "sub": "Kartta oturum açmak ve sudo için kullandığınız hesap.",
           "now": "Şimdi oluştur",
           "later": "İlk oturum açmada",
-          "more": "Tam ad ve oturum açma kabuğu",
-          "shellDefault": "Armbian varsayılanı",
-          "laterLine": "İlk oturum açışınızda, SSH ile veya klavye ve monitörle, Armbian sizden bir kullanıcı oluşturmanızı ister. Bu profildeki dil ve saat o zaman uygulanmaz."
+          "more": "Tam ad ve oturum açma kabuğu"
         },
         "locale": {
           "title": "Dil ve saat",
-          "sub": "İlk oturum açmada ayarlanır, kullanıcı şimdi oluşturulsa da oluşturulmasa da.",
           "location": "Konumdan",
           "choose": "Ben seçerim",
           "language": "Dil",
-          "searchTimezone": "Saat dilimi ara",
-          "locationLine": "Armbian dili ve saat dilimini, kartın internete bağlandığı yere göre ayarlar."
+          "searchTimezone": "Saat dilimi ara"
         },
         "access": {
           "title": "Nasıl giriyorsunuz?",
-          "sub": "SSH anahtarlarıyla parola yazmadan oturum açabilirsiniz.",
           "keys": "SSH anahtarları",
           "passwordOnly": "Yalnızca parola",
           "link": "Bağlantı",
@@ -457,8 +428,7 @@
           "title": "{{name}} oluşturmaya hazır",
           "sub": "Bir kez kontrol edin. Sonra özette seçili olur.",
           "subSettings": "Bir kez kontrol edin. Sonra profil listenizde görünür.",
-          "titleEmpty": "{{name}} içinde henüz hiçbir şey ayarlanmadı",
-          "subEmpty": "Her alan Armbian varsayılanlarını korur, bu yüzden yazılacak bir şey yok. Oluşturmak için birini düzenleyin."
+          "titleEmpty": "{{name}} içinde henüz hiçbir şey ayarlanmadı"
         }
       },
       "editor": {
@@ -494,22 +464,16 @@
         "netFixed": "Sabit, {{ip}}",
         "netAuto": "Otomatik adres",
         "whoLogsIn": "Kim oturum açıyor",
-        "laterHint": "Armbian ilk oturum açmada sorar",
-        "userOk": "Küçük harf, harfle başlar",
         "userCreatedAs": "{{name}} olarak oluşturulur",
-        "userInvalid": "Küçük harf, rakam, - ve _ kullanın",
         "passwordRequired": "Oturum açmak için gerekli",
         "fullNameRequired": "Dil ve saat dilimini ayarlamak için gerekli",
         "fullNameNotSet": "Tam ad ayarlanmadı",
-        "howYouGetIn": "Nasıl oturum açıyorsunuz",
         "passwordLoginHint": "Parolanızla oturum açın",
-        "keysFrom": "Anahtarların kaynağı",
         "keyUserRequired": "Bir kullanıcı adı girin",
         "keyLinkRequired": "Açık anahtarların bağlantısını yapıştırın",
         "rootSet": "Root parolası ayarlandı",
         "rootNotSet": "Root parolası ayarlanmadı",
         "rootPlaceholder": "Ayarlanmadı",
-        "rootHint": "Boşsa Armbian ilk oturum açmada sorar",
         "locationHint": "Kartın bağlandığı yere göre ayarlanır",
         "remoteHint": "İlk açılışta uygulanır",
         "atFirstBoot": "İlk açılışta",
@@ -517,8 +481,6 @@
         "factBothFixed": "Wi-Fi {{address}}, kablo otomatik",
         "factDhcp": "DHCP",
         "factUser": "Kullanıcı {{name}}",
-        "factKeys_one": "{{count}} SSH anahtarı · {{source}}",
-        "factKeys_other": "{{count}} SSH anahtarı · {{source}}",
         "factKeysMissing": "SSH anahtarları bulunamadı",
         "factTzUnset": "Saat dilimi ayarlanmadı",
         "sectionsSet": "{{total}} bölümden {{done}} ayarlandı",
@@ -533,7 +495,6 @@
         "createNeedsFix": "Oluşturmak için işaretli alanları düzeltin",
         "saveNeedsSomething": "Kaydetmek için en az bir şey ayarlayın",
         "createNeedsSomething": "Oluşturmak için en az bir şey ayarlayın",
-        "useDefaults": "Armbian varsayılanlarını kullan",
         "deleteProfile": "Profili sil",
         "deleteProfileDesc": "Imager'dan kaldırılır. Daha önce yazılmış bellek kartları ayarlarını korur.",
         "discard": "Vazgeç",
@@ -637,8 +598,7 @@
       "chipWrite": "Yazma",
       "chipVerify": "Doğrulama",
       "verifyAfter": "Yazdıktan sonra doğrula",
-      "verifyAfterDesc": "Aygıtı geri okur ve imajla karşılaştırır. Daha uzun sürer",
-      "detectionUnavailable": "Yalnızca bu bilgisayar Armbian çalıştırırken"
+      "verifyAfterDesc": "Aygıtı geri okur ve imajla karşılaştırır. Daha uzun sürer"
     },
     "downloads": {
       "lead": "İmaj önbelleği ve ağ",
@@ -655,15 +615,13 @@
       "checking": "Denetleniyor…",
       "website": "Web sitesi",
       "reportSub": "GitHub sorunları",
-      "support": "Armbian'a destek ol",
       "logsEyebrow": "Günlükler",
       "sessionLog": "Oturum günlüğü",
       "sessionLogDesc": "Bu oturumun günlüğü, hata raporlarına eklemek için",
       "open": "Aç",
       "upload": "Yükle",
       "sharedLogs": "Paylaşılan günlükler",
-      "sharedLogsDesc": "Günlüğü {{host}} adresine yükleyin ve paylaşılabilir bir bağlantı alın",
-      "credits": "Armbian Imager, GPL-2.0-or-later lisanslı özgür yazılımdır. Armbian topluluğu tarafından Tauri {{tauri}} ile geliştirilmiştir. Bayraklar: Twemoji, CC-BY 4.0."
+      "sharedLogsDesc": "Günlüğü {{host}} adresine yükleyin ve paylaşılabilir bir bağlantı alın"
     },
     "profiles": {
       "lead": "İlk açılış ayarları, yalnızca bir profil seçtiğinizde uygulanır",
@@ -686,7 +644,6 @@
     "railDownloading": "Güncelleme indiriliyor",
     "restartBlocked": "Yazma bittikten sonra yeniden başlatabilirsiniz.",
     "retry": "Tekrar dene",
-    "appVersionAvailable": "Armbian Imager {{version}} mevcut",
     "versionReady": "{{version}} hazır",
     "downloadingVersion": "{{version}} indiriliyor",
     "transferProgress": "{{done}} / {{total}}",

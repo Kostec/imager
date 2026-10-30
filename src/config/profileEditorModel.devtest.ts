@@ -123,6 +123,25 @@ test('Wi-Fi needs a country and a valid SSID', () => {
   same(blocked(form({ wifiEnabled: true, wifiSsid: 'я'.repeat(17), wifiCountryCode: 'RU' })), 'network');
 });
 
+test('a fixed IP without a mask is an error at the field and stops the editor and the wizard', () => {
+  const f = form({ hostname: 'x', useStaticIp: true, staticIp: '192.168.1.50', staticGateway: '192.168.1.1' });
+  same(m.editorIpErrors(f.network).mask, 'maskInvalid');
+  same(m.firstBlockingGroup(f), { group: 'network', more: 'network' });
+  same(w.wizardStepBlocked('network', f), true);
+  same(w.wizardProfileError(f, {}), 'settings.autoconfig.maskInvalid', 'going back must not get past the check');
+  same(w.wizardProfileError(f, { network: true }), null, 'a skipped step writes nothing');
+  f.network.mask = '   ';
+  same(blocked(f), 'network', 'spaces are no mask');
+  f.network.mask = '255.255.255.0';
+  same(m.editorIpErrors(f.network), {});
+  same(blocked(f), null);
+  same(w.wizardStepBlocked('network', f), false);
+  f.network.mask = '';
+  f.network.ip = 'auto';
+  same(blocked(f), null, 'automatic needs no mask');
+  same(w.wizardStepBlocked('network', f), false, 'automatic needs no mask');
+});
+
 test('sealing leaves no plain text in the profile and clears the form', async () => {
   const f = form({ userName: 'pi', userPasswordHash: HASH, wifiEnabled: true, wifiSsid: 'net', wifiCountryCode: 'RU' });
   f.secrets = { wifiKey: PLAIN, userPassword: PLAIN, rootPassword: PLAIN };

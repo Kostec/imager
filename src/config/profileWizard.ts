@@ -106,8 +106,10 @@ export function wizardModel(form: EditorForm, skipped: WizardSkips): EditorForm 
 }
 
 /** i18n key of what stops the profile as a whole: going back to an earlier step can undo what the access step checked */
-export const wizardProfileError = (form: EditorForm, skipped: WizardSkips): string | null =>
-  underAutoconfig(accessError(wizardModel(form, skipped)));
+export function wizardProfileError(form: EditorForm, skipped: WizardSkips): string | null {
+  const model = wizardModel(form, skipped);
+  return underAutoconfig(accessError(model) ?? (model.network.apply ? editorIpErrors(model.network).mask : null) ?? null);
+}
 
 /** Takes a sealed model: what reaches the profile has no plain text to carry. */
 export const wizardProfile = (m: EditorModel): Pick<AutoconfigProfile, 'name' | 'config' | 'boards'> => fromEditorModel(m);

@@ -266,7 +266,10 @@ export function accessError({ access: a, user }: Pick<EditorModel, 'access' | 'u
 }
 
 export function editorIpErrors(n: EditorModel['network']) {
-  return n.ip === 'fixed' ? staticIpConfigErrors({ staticIp: n.address, staticMask: n.mask, staticGateway: n.gateway, staticDns: n.dns }) : {};
+  if (n.ip !== 'fixed') return {};
+  const errors = staticIpConfigErrors({ staticIp: n.address, staticMask: n.mask, staticGateway: n.gateway, staticDns: n.dns });
+  // Without a mask there is no prefix, and render_bundle would refuse the profile only when the card is being written.
+  return n.mask.trim() ? errors : { ...errors, mask: 'maskInvalid' };
 }
 
 /** i18n key (under settings.autoconfig) of what is wrong with the SSID, or null */

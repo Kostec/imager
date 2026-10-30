@@ -2,19 +2,13 @@
   "home": {
     "manufacturer": "制造商",
     "board": "开发板",
-    "operatingSystem": "操作系统",
     "storage": "存储设备",
     "chooseBrand": "选择品牌",
     "chooseBoard": "选择开发板",
-    "chooseOs": "选择系统",
     "chooseStorage": "选择存储设备",
     "device": "设备",
     "chooseDevice": "选择设备",
-    "welcomeHeading": "欢迎使用 Armbian Imager",
-    "welcomeIntro": "选好开发板和镜像就行，剩下的下载、写入 SD 卡或 U 盘以及校验都交给我们。",
     "startNow": "立即开始",
-    "useCustomImage": "使用自定义镜像",
-    "changeCustomImage": "更换自定义镜像",
     "changeCachedImage": "更换缓存镜像",
     "imageCount_one": "{{count}} 个镜像",
     "imageCount_other": "{{count}} 个镜像",
@@ -90,7 +84,6 @@
     "noManufacturers": "未找到制造商",
     "noBoards": "未找到开发板",
     "boardUpdateRequired": "需要更新",
-    "boardUpdateRequiredHint": "此版本的 Armbian Imager 不支持此开发板。请更新。",
     "noImages": "未找到镜像",
     "noImagesHint": "该开发板目前没有已发布的镜像。",
     "noDevices": "未找到设备",
@@ -141,12 +134,9 @@
     "uploadLogsForSupport": "上传日志以获取支持",
     "viewLogs": "查看日志",
     "scanQrOrShare": "请扫描二维码或分享此链接：",
-    "serverTitle": "Armbian 服务器没有响应",
     "serverHint": "这不是你的网络问题。请几分钟后再试。",
-    "networkTitle": "无法连接到 Armbian",
     "networkHint": "请检查你的网络连接，或几分钟后再试。",
     "otherTitle": "此列表未能加载",
-    "otherHint": "请重试。如果问题持续出现，请上传日志，方便 Armbian 团队排查。",
     "devicesTitle": "无法检查你的存储设备",
     "devicesHint": "请重新连接读卡器或驱动器，然后重试。",
     "edlDevicesTitle": "无法搜索 EDL 模式下的设备",
@@ -159,7 +149,6 @@
     "logsStepScan": "扫描二维码或复制链接",
     "logsStepIssue": "在 GitHub 上提交 issue",
     "logsStepPaste": "粘贴链接并描述问题",
-    "logsCaption": "Armbian 日志",
     "openInBrowser": "在浏览器中打开"
   },
   "error": {
@@ -176,7 +165,6 @@
     "qdlPermissionDenied": "USB 访问被拒绝。在 Linux 上，请安装 udev 规则：echo 'SUBSYSTEM==\"usb\", ATTR{idVendor}==\"05c6\", ATTR{idProduct}==\"9008\", MODE=\"0666\"' | sudo tee /etc/udev/rules.d/51-qdl.rules && echo 'blacklist qcserial' | sudo tee /etc/modprobe.d/blacklist-qcserial.conf && sudo udevadm control --reload-rules",
     "qdlConnectionFailed": "无法连接到 EDL 设备。请确认设备已进入 EDL 模式并通过 USB 连接。",
     "qdlAutoconfigFailed": "无法将自动配置文件应用到 QDL 镜像。",
-    "autoconfigNotArmbian": "此镜像没有 Armbian 首次启动设置，因此无法应用配置文件。请不使用配置文件进行烧录，或选择 Armbian 镜像。",
     "deviceInvalidPath": "无法写入此设备。请重新选择设备。",
     "deviceNotFound": "所选设备已不再连接。请重新连接后再次选择。",
     "deviceChanged": "所选设备在选择之后发生了变化。请在写入前重新选择。",
@@ -197,7 +185,6 @@
     "selectError": "无法打开所选镜像"
   },
   "armbian": {
-    "description": "此设备正在运行 Armbian。是否预先选定该开发板，省去手动步骤？",
     "cancelHint": "若取消，将关闭开发板自动检测。",
     "disabledToast": "已关闭开发板自动检测。可在“设置”中重新开启。"
   },
@@ -284,7 +271,6 @@
     "allowSystemDevicesDescription": "有风险：可能覆盖正在运行的操作系统。",
     "armbian": {
       "label": "自动检测开发板",
-      "description": "当此设备运行 Armbian 时，自动识别其开发板",
       "mode_disabled": "已关闭",
       "mode_modal": "交互式",
       "mode_auto": "静默"
@@ -322,19 +308,15 @@
       "nameRequired": "请输入配置文件名称",
       "selectPlaceholder": "选择…",
       "urlInvalid": "请输入有效的 URL（http 或 https）",
-      "armbianDefaults": "Armbian 默认设置",
       "keys": {
         "checking": "正在检查密钥...",
-        "found_one": "找到 {{count}} 个密钥。开发板会在首次启动时获取。",
-        "found_other": "找到 {{count}} 个密钥。开发板会在首次启动时获取。",
         "notFoundForge": "没有使用此用户名的 {{forge}} 账号。",
         "notFoundLink": "此链接未找到任何内容。",
         "noneForge": "此 {{forge}} 账号还没有公开的 SSH 密钥。",
         "noneLink": "此链接未提供公开的 SSH 密钥。",
         "tooLarge": "此地址返回的内容过多，不像是公钥列表。",
         "invalidForge": "这不是有效的 {{forge}} 用户名。",
-        "invalidLink": "这里只能检查 https 链接。",
-        "unreachable": "暂时无法检查密钥。开发板会在首次启动时获取。"
+        "invalidLink": "这里只能检查 https 链接。"
       },
       "ipInvalid": "请输入有效的 IPv4 地址（例如 192.168.1.50）",
       "ipNotHost": "这是子网的网络地址或广播地址，不能用作设备地址。请选择类似 192.168.1.50 的地址",
@@ -366,8 +348,6 @@
       "guidedHint": "一次一个问题",
       "fillForm": "填写表单",
       "fillFormHint": "所有选项在同一页",
-      "wifiKeyFits": "适用于 Wi-Fi（8 到 63 个字符）",
-      "wifiKeyLength": "Wi-Fi 密码通常为 8 到 63 个字符",
       "wizard": {
         "eyebrow": "新建配置文件",
         "unnamed": "尚未命名",
@@ -391,10 +371,6 @@
           "locale": "语言和时间",
           "access": "访问",
           "review": "检查"
-        },
-        "pending": {
-          "network": "保持 Armbian 默认设置",
-          "locale": "Armbian 默认设置"
         },
         "sum": {
           "keysFrom": "来自 {{forge}} 的 SSH 密钥",
@@ -429,22 +405,17 @@
           "sub": "你在开发板上使用的账户，用于登录和 sudo。",
           "now": "现在创建",
           "later": "首次登录时",
-          "more": "全名和登录 Shell",
-          "shellDefault": "Armbian 默认",
-          "laterLine": "首次登录时，无论通过 SSH 还是键盘和显示器，Armbian 都会要求你创建用户。此时不会应用此配置文件中的语言和时间。"
+          "more": "全名和登录 Shell"
         },
         "locale": {
           "title": "语言和时间",
-          "sub": "在首次登录时设置，无论现在是否创建用户。",
           "location": "根据位置",
           "choose": "我自己选",
           "language": "语言",
-          "searchTimezone": "搜索时区",
-          "locationLine": "Armbian 会根据开发板连接互联网的位置设置语言和时区。"
+          "searchTimezone": "搜索时区"
         },
         "access": {
           "title": "如何登录？",
-          "sub": "使用 SSH 密钥，无需输入密码即可登录。",
           "keys": "SSH 密钥",
           "passwordOnly": "仅密码",
           "link": "链接",
@@ -457,8 +428,7 @@
           "title": "准备创建 {{name}}",
           "sub": "检查一次。之后它会在摘要页被选中。",
           "subSettings": "检查一次。之后它会显示在你的配置文件列表中。",
-          "titleEmpty": "{{name}} 中尚未设置任何内容",
-          "subEmpty": "所有区域都保持 Armbian 默认值，因此没有可写入的内容。编辑其中一项即可创建。"
+          "titleEmpty": "{{name}} 中尚未设置任何内容"
         }
       },
       "editor": {
@@ -494,22 +464,16 @@
         "netFixed": "固定，{{ip}}",
         "netAuto": "自动获取地址",
         "whoLogsIn": "登录用户",
-        "laterHint": "Armbian 会在首次登录时询问",
-        "userOk": "小写，以字母开头",
         "userCreatedAs": "将创建为 {{name}}",
-        "userInvalid": "请使用小写字母、数字、- 和 _",
         "passwordRequired": "登录所需",
         "fullNameRequired": "设置语言和时区需要全名",
         "fullNameNotSet": "未设置全名",
-        "howYouGetIn": "登录方式",
         "passwordLoginHint": "使用密码登录",
-        "keysFrom": "密钥来源",
         "keyUserRequired": "请输入用户名",
         "keyLinkRequired": "请粘贴公钥链接",
         "rootSet": "已设置 Root 密码",
         "rootNotSet": "未设置 Root 密码",
         "rootPlaceholder": "未设置",
-        "rootHint": "留空时，Armbian 会在首次登录时询问",
         "locationHint": "根据开发板连接网络的位置设置",
         "remoteHint": "首次启动时应用",
         "atFirstBoot": "首次启动时",
@@ -517,8 +481,6 @@
         "factBothFixed": "Wi-Fi {{address}}，网线自动获取",
         "factDhcp": "DHCP",
         "factUser": "用户 {{name}}",
-        "factKeys_one": "{{count}} 个 SSH 密钥 · {{source}}",
-        "factKeys_other": "{{count}} 个 SSH 密钥 · {{source}}",
         "factKeysMissing": "未找到 SSH 密钥",
         "factTzUnset": "未设置时区",
         "sectionsSet": "已设置 {{done}}/{{total}}",
@@ -533,7 +495,6 @@
         "createNeedsFix": "先修正标记的字段才能创建",
         "saveNeedsSomething": "至少设置一项才能保存",
         "createNeedsSomething": "至少设置一项才能创建",
-        "useDefaults": "使用 Armbian 默认设置",
         "deleteProfile": "删除配置文件",
         "deleteProfileDesc": "将从 Imager 中移除。已写入的存储卡仍保留其设置。",
         "discard": "放弃",
@@ -637,8 +598,7 @@
       "chipWrite": "写入",
       "chipVerify": "校验",
       "verifyAfter": "写入后校验",
-      "verifyAfterDesc": "回读设备并与镜像比较，耗时更长",
-      "detectionUnavailable": "仅当此电脑运行 Armbian 时可用"
+      "verifyAfterDesc": "回读设备并与镜像比较，耗时更长"
     },
     "downloads": {
       "lead": "镜像缓存与网络",
@@ -655,15 +615,13 @@
       "checking": "正在检查……",
       "website": "网站",
       "reportSub": "GitHub 问题",
-      "support": "支持 Armbian",
       "logsEyebrow": "日志",
       "sessionLog": "会话日志",
       "sessionLogDesc": "本次会话的日志，可附在问题反馈中",
       "open": "打开",
       "upload": "上传",
       "sharedLogs": "共享日志",
-      "sharedLogsDesc": "将日志上传到 {{host}}，获得可分享的链接",
-      "credits": "Armbian Imager 是以 GPL-2.0-or-later 许可的自由软件，由 Armbian 社区使用 Tauri {{tauri}} 构建。国旗来自 Twemoji，CC-BY 4.0。"
+      "sharedLogsDesc": "将日志上传到 {{host}}，获得可分享的链接"
     },
     "profiles": {
       "lead": "首次启动的设置，仅在你选择配置文件时应用",
@@ -686,7 +644,6 @@
     "railDownloading": "正在下载更新",
     "restartBlocked": "烧录完成后即可重启。",
     "retry": "重试",
-    "appVersionAvailable": "Armbian Imager {{version}} 现已可用",
     "versionReady": "{{version}} 已就绪",
     "downloadingVersion": "正在下载 {{version}}",
     "transferProgress": "{{done}} / {{total}}",

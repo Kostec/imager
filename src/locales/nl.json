@@ -2,19 +2,13 @@
   "home": {
     "manufacturer": "Fabrikant",
     "board": "Board",
-    "operatingSystem": "Besturingssysteem",
     "storage": "Opslag",
     "chooseBrand": "Kies merk",
     "chooseBoard": "Kies board",
-    "chooseOs": "Kies OS",
     "chooseStorage": "Kies opslag",
     "device": "Apparaat",
     "chooseDevice": "Kies apparaat",
-    "welcomeHeading": "Welkom bij Armbian Imager",
-    "welcomeIntro": "Kies je board en een image. Wij downloaden het, schrijven het naar je SD-kaart of USB-stick en controleren het voor je.",
     "startNow": "Nu beginnen",
-    "useCustomImage": "Aangepaste image gebruiken",
-    "changeCustomImage": "Aangepaste image wijzigen",
     "changeCachedImage": "Gecacht image wijzigen",
     "imageCount_one": "{{count}} image",
     "imageCount_other": "{{count}} images",
@@ -90,7 +84,6 @@
     "noManufacturers": "Geen fabrikanten gevonden",
     "noBoards": "Geen boards gevonden",
     "boardUpdateRequired": "Update vereist",
-    "boardUpdateRequiredHint": "Dit board wordt niet ondersteund door deze versie van Armbian Imager. Werk de app bij.",
     "noImages": "Geen images gevonden",
     "noImagesHint": "Er zijn momenteel geen images gepubliceerd voor dit board.",
     "noDevices": "Geen apparaten gevonden",
@@ -141,12 +134,9 @@
     "uploadLogsForSupport": "Logs uploaden voor ondersteuning",
     "viewLogs": "Logs bekijken",
     "scanQrOrShare": "Scan QR of deel deze link:",
-    "serverTitle": "De servers van Armbian reageren niet",
     "serverHint": "Dit ligt niet aan je verbinding. Probeer het over een paar minuten opnieuw.",
-    "networkTitle": "Armbian is niet bereikbaar",
     "networkHint": "Controleer je internetverbinding of probeer het over een paar minuten opnieuw.",
     "otherTitle": "Deze lijst is niet geladen",
-    "otherHint": "Probeer het opnieuw. Blijft het gebeuren, upload dan de logs zodat het Armbian-team het kan onderzoeken.",
     "devicesTitle": "Opslagapparaten konden niet worden gecontroleerd",
     "devicesHint": "Sluit de kaartlezer of schijf opnieuw aan en probeer het opnieuw.",
     "edlDevicesTitle": "Zoeken naar apparaten in EDL-modus is mislukt",
@@ -159,7 +149,6 @@
     "logsStepScan": "Scan de code of kopieer de link",
     "logsStepIssue": "Open een issue op GitHub",
     "logsStepPaste": "Plak de link en beschrijf het probleem",
-    "logsCaption": "Armbian-logs",
     "openInBrowser": "Openen in browser"
   },
   "error": {
@@ -176,7 +165,6 @@
     "qdlPermissionDenied": "USB-toegang geweigerd. Installeer op Linux udev-regels: echo 'SUBSYSTEM==\"usb\", ATTR{idVendor}==\"05c6\", ATTR{idProduct}==\"9008\", MODE=\"0666\"' | sudo tee /etc/udev/rules.d/51-qdl.rules && echo 'blacklist qcserial' | sudo tee /etc/modprobe.d/blacklist-qcserial.conf && sudo udevadm control --reload-rules",
     "qdlConnectionFailed": "Verbinding met EDL-apparaat mislukt. Controleer of het apparaat in EDL-modus staat en via USB is aangesloten.",
     "qdlAutoconfigFailed": "Het toepassen van het autoconfig-profiel op de QDL-image is mislukt.",
-    "autoconfigNotArmbian": "Deze image heeft geen eerste-opstartinstelling van Armbian, dus het profiel kan niet worden toegepast. Flash zonder profiel of kies een Armbian-image.",
     "deviceInvalidPath": "Er kan niet naar dit apparaat worden geschreven. Selecteer het apparaat opnieuw.",
     "deviceNotFound": "Het geselecteerde apparaat is niet meer aangesloten. Sluit het opnieuw aan en selecteer het opnieuw.",
     "deviceChanged": "Het geselecteerde apparaat is gewijzigd sinds je het koos. Selecteer het opnieuw voordat je schrijft.",
@@ -197,7 +185,6 @@
     "selectError": "Kan de geselecteerde image niet openen"
   },
   "armbian": {
-    "description": "Dit apparaat draait Armbian. Wil je dit board alvast selecteren en de handmatige stappen overslaan?",
     "cancelHint": "Als je annuleert, wordt automatische boarddetectie uitgeschakeld.",
     "disabledToast": "Automatische detectie uitgeschakeld. Schakel het opnieuw in bij Instellingen."
   },
@@ -284,7 +271,6 @@
     "allowSystemDevicesDescription": "Riskant: je kunt het draaiende besturingssysteem overschrijven.",
     "armbian": {
       "label": "Board automatisch detecteren",
-      "description": "Automatisch het board van dit apparaat identificeren bij gebruik van Armbian",
       "mode_disabled": "Uitgeschakeld",
       "mode_modal": "Interactief",
       "mode_auto": "Stil"
@@ -322,19 +308,15 @@
       "nameRequired": "Voer een profielnaam in",
       "selectPlaceholder": "Selecteren…",
       "urlInvalid": "Voer een geldige URL in (http of https)",
-      "armbianDefaults": "Armbian-standaarden",
       "keys": {
         "checking": "Sleutels controleren...",
-        "found_one": "{{count}} sleutel gevonden. Het board haalt die op bij de eerste start.",
-        "found_other": "{{count}} sleutels gevonden. Het board haalt ze op bij de eerste start.",
         "notFoundForge": "Geen {{forge}}-account met deze gebruikersnaam.",
         "notFoundLink": "Op deze link is niets gevonden.",
         "noneForge": "Dit {{forge}}-account heeft nog geen openbare SSH-sleutels.",
         "noneLink": "Deze link levert geen openbare SSH-sleutels.",
         "tooLarge": "Dit adres levert te veel om een lijst met openbare sleutels te zijn.",
         "invalidForge": "Dit is geen geldige {{forge}}-gebruikersnaam.",
-        "invalidLink": "Hier kunnen alleen https-links worden gecontroleerd.",
-        "unreachable": "De sleutels kunnen nu niet worden gecontroleerd. Het board haalt ze op bij de eerste start."
+        "invalidLink": "Hier kunnen alleen https-links worden gecontroleerd."
       },
       "ipInvalid": "Voer een geldig IPv4-adres in (bijv. 192.168.1.50)",
       "ipNotHost": "Dit is het netwerk- of broadcastadres van het subnet, geen bruikbaar apparaatadres. Kies er een zoals 192.168.1.50",
@@ -366,8 +348,6 @@
       "guidedHint": "Eén vraag tegelijk",
       "fillForm": "Formulier invullen",
       "fillFormHint": "Alle opties op één pagina",
-      "wifiKeyFits": "Geschikt voor Wi-Fi (8 tot 63 tekens)",
-      "wifiKeyLength": "Wi-Fi-wachtwoorden hebben meestal 8 tot 63 tekens",
       "wizard": {
         "eyebrow": "Nieuw profiel",
         "unnamed": "Nog geen naam",
@@ -391,10 +371,6 @@
           "locale": "Taal en tijd",
           "access": "Toegang",
           "review": "Controle"
-        },
-        "pending": {
-          "network": "Behoudt de Armbian-standaarden",
-          "locale": "Armbian-standaarden"
         },
         "sum": {
           "keysFrom": "SSH-sleutels van {{forge}}",
@@ -429,22 +405,17 @@
           "sub": "Het account dat je op het board gebruikt, voor inloggen en voor sudo.",
           "now": "Nu aanmaken",
           "later": "Bij de eerste login",
-          "more": "Volledige naam en login-shell",
-          "shellDefault": "Armbian-standaard",
-          "laterLine": "De eerste keer dat je inlogt, via SSH of met toetsenbord en monitor, vraagt Armbian je een gebruiker aan te maken. De taal en tijd uit dit profiel worden dan niet toegepast."
+          "more": "Volledige naam en login-shell"
         },
         "locale": {
           "title": "Taal en tijd",
-          "sub": "Ingesteld bij de eerste login, ook als er nu geen gebruiker wordt aangemaakt.",
           "location": "Op basis van de locatie",
           "choose": "Ik kies",
           "language": "Taal",
-          "searchTimezone": "Tijdzones zoeken",
-          "locationLine": "Armbian stelt de taal en tijdzone in op basis van waar het board verbinding maakt met internet."
+          "searchTimezone": "Tijdzones zoeken"
         },
         "access": {
           "title": "Hoe kom je binnen?",
-          "sub": "Met SSH-sleutels log je in zonder een wachtwoord te typen.",
           "keys": "SSH-sleutels",
           "passwordOnly": "Alleen wachtwoord",
           "link": "Link",
@@ -457,8 +428,7 @@
           "title": "Klaar om {{name}} te maken",
           "sub": "Controleer het één keer. Daarna is het geselecteerd in het overzicht.",
           "subSettings": "Controleer het één keer. Daarna staat het in je profielenlijst.",
-          "titleEmpty": "In {{name}} is nog niets ingesteld",
-          "subEmpty": "Elk onderdeel behoudt de standaardwaarden van Armbian, dus er valt niets te schrijven. Bewerk er een om het te maken."
+          "titleEmpty": "In {{name}} is nog niets ingesteld"
         }
       },
       "editor": {
@@ -494,22 +464,16 @@
         "netFixed": "Vast, {{ip}}",
         "netAuto": "Automatisch adres",
         "whoLogsIn": "Wie er inlogt",
-        "laterHint": "Armbian vraagt erom bij de eerste login",
-        "userOk": "Kleine letters, begint met een letter",
         "userCreatedAs": "Aangemaakt als {{name}}",
-        "userInvalid": "Gebruik kleine letters, cijfers, - en _",
         "passwordRequired": "Nodig om in te loggen",
         "fullNameRequired": "Nodig om taal en tijdzone in te stellen",
         "fullNameNotSet": "Volledige naam niet ingesteld",
-        "howYouGetIn": "Hoe je inlogt",
         "passwordLoginHint": "Inloggen met je wachtwoord",
-        "keysFrom": "Sleutels van",
         "keyUserRequired": "Voer een gebruikersnaam in",
         "keyLinkRequired": "Plak een link naar de openbare sleutels",
         "rootSet": "Root-wachtwoord ingesteld",
         "rootNotSet": "Root-wachtwoord niet ingesteld",
         "rootPlaceholder": "Niet ingesteld",
-        "rootHint": "Als het leeg is, vraagt Armbian erom bij de eerste login",
         "locationHint": "Ingesteld op basis van waar het board verbinding maakt",
         "remoteHint": "Toegepast bij de eerste start",
         "atFirstBoot": "Bij de eerste start",
@@ -517,8 +481,6 @@
         "factBothFixed": "Wi-Fi {{address}}, kabel automatisch",
         "factDhcp": "DHCP",
         "factUser": "Gebruiker {{name}}",
-        "factKeys_one": "{{count}} SSH-sleutel · {{source}}",
-        "factKeys_other": "{{count}} SSH-sleutels · {{source}}",
         "factKeysMissing": "SSH-sleutels niet gevonden",
         "factTzUnset": "Tijdzone niet ingesteld",
         "sectionsSet": "{{done}} van {{total}} ingesteld",
@@ -533,7 +495,6 @@
         "createNeedsFix": "Corrigeer de gemarkeerde velden om het te maken",
         "saveNeedsSomething": "Stel minstens één ding in om op te slaan",
         "createNeedsSomething": "Stel minstens één ding in om het te maken",
-        "useDefaults": "Armbian-standaarden gebruiken",
         "deleteProfile": "Profiel verwijderen",
         "deleteProfileDesc": "Wordt uit Imager verwijderd. Reeds beschreven geheugenkaarten behouden hun instellingen.",
         "discard": "Verwerpen",
@@ -637,8 +598,7 @@
       "chipWrite": "Schrijven",
       "chipVerify": "Verifiëren",
       "verifyAfter": "Verifiëren na het schrijven",
-      "verifyAfterDesc": "Leest het apparaat terug en vergelijkt het met het image. Duurt langer",
-      "detectionUnavailable": "Alleen als deze computer Armbian draait"
+      "verifyAfterDesc": "Leest het apparaat terug en vergelijkt het met het image. Duurt langer"
     },
     "downloads": {
       "lead": "Image-cache en netwerk",
@@ -655,15 +615,13 @@
       "checking": "Controleren…",
       "website": "Website",
       "reportSub": "GitHub-issues",
-      "support": "Armbian ondersteunen",
       "logsEyebrow": "Logs",
       "sessionLog": "Sessielog",
       "sessionLogDesc": "Log van deze sessie, om bij bugmeldingen te voegen",
       "open": "Openen",
       "upload": "Uploaden",
       "sharedLogs": "Gedeelde logs",
-      "sharedLogsDesc": "Upload de log naar {{host}} en krijg een link om te delen",
-      "credits": "Armbian Imager is vrije software, gelicentieerd onder GPL-2.0-or-later. Gemaakt door de Armbian-community met Tauri {{tauri}}. Vlaggen van Twemoji, CC-BY 4.0."
+      "sharedLogsDesc": "Upload de log naar {{host}} en krijg een link om te delen"
     },
     "profiles": {
       "lead": "Instellingen voor de eerste start, alleen toegepast als je een profiel kiest",
@@ -686,7 +644,6 @@
     "railDownloading": "Update downloaden",
     "restartBlocked": "Je kunt herstarten zodra het flashen klaar is.",
     "retry": "Opnieuw proberen",
-    "appVersionAvailable": "Armbian Imager {{version}} is beschikbaar",
     "versionReady": "{{version}} is gereed",
     "downloadingVersion": "{{version}} downloaden",
     "transferProgress": "{{done}} van {{total}}",

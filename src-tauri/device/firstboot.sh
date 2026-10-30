@@ -13,6 +13,7 @@
 WK_DIR=/etc/systemd/system/armbian-firstrun.service.d
 WK_ENV=$WK_DIR/firstboot.env
 WK_LOG=/var/log/wukong-firstboot.log
+WK_LOG_DISK=/var/log.hdd
 WK_POST_UNIT=/etc/systemd/system/wukong-post-network.service
 NM_DIR=/etc/NetworkManager/system-connections
 USER_GROUPS="sudo netdev audio video disk tty users games dialout plugdev input bluetooth systemd-journal ssh"
@@ -27,6 +28,15 @@ umask 077
 
 log() {
 	printf '%s firstboot: %s\n' "$(date '+%F %T')" "$*" >>"$WK_LOG" 2>/dev/null
+}
+
+# /var/log is in RAM on Armbian. What is copied here comes back at the next boot, even after a power cut.
+save_log() {
+	# With armbian-ramlog down, /var/log.hdd is a bind mount of the card's own /var/log and this is the same file.
+	if [[ -d $WK_LOG_DISK && ! $WK_LOG -ef $WK_LOG_DISK/${WK_LOG##*/} ]]; then
+		cp -p "$WK_LOG" "$WK_LOG_DISK/" 2>/dev/null || log "FAIL log not copied to $WK_LOG_DISK"
+	fi
+	sync
 }
 
 # step NAME FUNCTION: one line of result per step, whatever the function does.
@@ -308,6 +318,16 @@ skip_wizard() {
 	systemctl daemon-reload
 }
 
+# armbian-ramlog has 30 s by default, and rsync copies by name: on a slow start it is killed with /var/log already in RAM
+# and this log, near the end of the list, not back yet. It stays on the card, but /var/log no longer shows it.
+apply_ramlog_timeout() {
+	local dir=/etc/systemd/system/armbian-ramlog.service.d
+	mkdir -p "$dir" || return 1
+	chmod 755 "$dir"
+	printf '[Service]\nTimeoutStartSec=5min\n' >"$dir/10-wukong.conf" || return 1
+	chmod 644 "$dir/10-wukong.conf"
+}
+
 # The boot transaction is already computed, so enable alone would only take effect on the next boot.
 start_post_network() {
 	cat >"$WK_POST_UNIT" <<EOF || return 1
@@ -356,8 +376,10 @@ main() {
 	[[ -n ${WK_ROOT_HASH:-} ]] || user_has_sudo && step root apply_root
 	[[ -n ${WK_OVERLAYS:-} ]] && step overlays apply_overlays
 	[[ -n $user_can_log_in ]] && step skip-wizard skip_wizard
+	step ramlog-timeout apply_ramlog_timeout
 	step post-network start_post_network
 	log "finished"
+	save_log
 	return 0
 }
 
