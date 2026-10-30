@@ -153,12 +153,20 @@ export function isValidHostname(name: string): boolean {
 
 const keyLines = (text: string) => text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
 
-export const countAuthorizedKeys = (text: string) => keyLines(text).length;
+// A public key has a type and a base64 body on one line, after options if any; a pasted PEM has neither.
+const PUBLIC_KEY_LINE =
+  /(?:^|\s)(?:ssh-(?:ed25519|rsa|dss)|ecdsa-sha2-nistp(?:256|384|521)|sk-ssh-ed25519@openssh\.com|sk-ecdsa-sha2-nistp256@openssh\.com)\s+[A-Za-z0-9+/]+={0,3}(?:\s|$)/;
 
-/** Refused on the card by `check` in src-tauri/src/provision/bundle.rs: nothing there may look like a section. */
+const isPublicKeyLine = (line: string) => PUBLIC_KEY_LINE.test(line);
+
+export const countAuthorizedKeys = (text: string) => keyLines(text).filter(isPublicKeyLine).length;
+
+/** Public keys and comments only. A line starting with [ is also what `check` in src-tauri/src/provision/bundle.rs refuses on the card. */
 export function areAuthorizedKeysValid(text: string): boolean {
-  // eslint-disable-next-line no-control-regex -- control characters are what this looks for
-  return keyLines(text).every((line) => !line.startsWith('[') && !/[\x00-\x1f\x7f]/.test(line));
+  return keyLines(text).every(
+    // eslint-disable-next-line no-control-regex -- control characters are what this looks for
+    (line) => !line.startsWith('[') && !/[\x00-\x1f\x7f]/.test(line) && (line.startsWith('#') || isPublicKeyLine(line))
+  );
 }
 
 export function mergeAuthorizedKeys(current: string, imported: string): string {
@@ -202,15 +210,16 @@ export function presetIsEmpty(c: AutoconfigConfig): boolean {
   );
 }
 
-/** root still has the image's password 1234 and the board is reachable; SSH runs unless the profile turns it off */
+/** root keeps the image's password 1234 and the board is on a network or runs SSH, which it does unless the profile turns it off */
 export function defaultRootExposed(c: AutoconfigConfig): boolean {
   return !c.userName?.trim() && !c.rootPasswordHash?.trim() && (c.wifiEnabled === true || c.sshEnabled !== false);
 }
 
-/** How to reach the board after the first boot; null when the profile turns SSH off */
+/** How to reach the board after the first boot; null when SSH is off or nobody could log in over it */
 export function sshCommand(c: AutoconfigConfig): string | null {
-  if (c.sshEnabled === false) return null;
-  const login = c.userName?.trim() || 'root';
+  const user = c.userName?.trim();
+  if (c.sshEnabled === false || (!user && c.sshRootLogin === false)) return null;
+  const login = user || 'root';
   const fixed = c.useStaticIp ? c.staticIp?.trim() : '';
   return `ssh ${login}@${fixed || `${c.hostname?.trim() || AUTOCONFIG.HOSTNAME_OF_IMAGE}.local`}`;
 }

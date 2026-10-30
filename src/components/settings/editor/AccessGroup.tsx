@@ -86,7 +86,7 @@ export function AccessGroup({ model, status, uid, patch, set, keepDefaults, more
   const keysId = fieldId(uid, 'keys');
   const forge = a.source === 'link' ? null : SSH_KEY_FORGES[a.source];
   const on = a.apply && a.enabled;
-  const error = accessError(a);
+  const error = accessError(model);
   const keysError = error === 'editor.keysInvalid' || error === 'editor.keysNotImported' ? error : null;
   const importer = useKeyImport(a, (value) => patch('access', value));
   const rootSet = !!a.rootPasswordHash || !!model.secrets.rootPassword;
@@ -130,12 +130,8 @@ export function AccessGroup({ model, status, uid, patch, set, keepDefaults, more
           />
           <ToggleRow
             label={t('settings.autoconfig.editor.sshRootLogin')}
-            tall={!a.rootLogin && model.user.mode === 'later'}
-            description={
-              !a.rootLogin && model.user.mode === 'later' ? (
-                <FieldHint tone="warn">{t('settings.autoconfig.editor.sshRootNoUser')}</FieldHint>
-              ) : undefined
-            }
+            tall={error === 'editor.sshRootNoUser'}
+            description={error === 'editor.sshRootNoUser' ? <FieldHint tone="warn">{t(`settings.autoconfig.${error}`)}</FieldHint> : undefined}
             checked={a.rootLogin}
             onChange={(rootLogin) => patch('access', { rootLogin })}
           />

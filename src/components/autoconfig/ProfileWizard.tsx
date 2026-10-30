@@ -62,10 +62,11 @@ export function ProfileWizard({ board, boardImage, fromFlash = false, returnFocu
     onCreated(profile);
     handleClose();
   });
-  const { model, step, stepIndex, saving, blocked, empty, attempted, go, next, skip, create } = wizard;
+  const { model, step, stepIndex, saving, blocked, empty, profileError, attempted, go, next, skip, create } = wizard;
   const dialogRef = useDialogFocus<HTMLDivElement>({ onEscape: saving ? undefined : handleClose, returnFocusRef });
 
   const reviewEmpty = step === 'review' && empty;
+  const reviewError = step === 'review' ? profileError : null;
   const HeadIcon = reviewEmpty
     ? Info
     : step === 'network' && model.network.apply && model.network.mode === 'cable'
@@ -110,6 +111,7 @@ export function ProfileWizard({ board, boardImage, fromFlash = false, returnFocu
           <footer className="pw-foot">
             <span className="pw-foot__sp" aria-live="polite">
               {reviewEmpty && <FieldHint tone="warn">{t('settings.autoconfig.editor.createNeedsSomething')}</FieldHint>}
+              {reviewError && <FieldHint tone="warn">{t(reviewError)}</FieldHint>}
             </span>
             {isWizardItem(step) && (
               <button type="button" className="pw-skip" onClick={skip}>
@@ -124,7 +126,7 @@ export function ProfileWizard({ board, boardImage, fromFlash = false, returnFocu
               {stepIndex === 0 ? t('common.cancel') : t('settings.autoconfig.wizard.back')}
             </button>
             {step === 'review' ? (
-              <button type="button" className="btn btn-primary btn-pill pw-foot__btn" onClick={create} disabled={saving} aria-disabled={empty || undefined}>
+              <button type="button" className="btn btn-primary btn-pill pw-foot__btn" onClick={create} disabled={saving} aria-disabled={empty || !!reviewError || undefined}>
                 {saving ? t('settings.autoconfig.saving') : t('settings.autoconfig.wizard.create')}
               </button>
             ) : (

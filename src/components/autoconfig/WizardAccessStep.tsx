@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Github, Gitlab, Link2, Power, PowerOff } from 'lucide-react';
 import { AUTOCONFIG_PLACEHOLDERS, SSH_KEY_FORGES, countAuthorizedKeys, type SshKeySource } from '../../config/autoconfig';
 import { accessError, type SshChoice } from '../../config/profileEditorModel';
+import { wizardAccessForm } from '../../config/profileWizard';
 import type { ProfileWizardState } from '../../hooks/useProfileWizard';
 import { SegmentedControl } from '../settings/controls';
 import { KeyImportControl, KeyImportHint } from '../settings/editor/AccessGroup';
@@ -15,11 +16,11 @@ import { WizardField, WizardMore, WizardToggle } from './WizardFields';
 
 export function WizardAccessStep({ wizard, uid }: { wizard: ProfileWizardState; uid: string }) {
   const { t } = useTranslation();
-  const { model, more, keyCheck, patch, toggleMore } = wizard;
+  const { model, skipped, more, keyCheck, patch, toggleMore } = wizard;
   const a = model.access;
   const forge = a.source === 'link' ? null : SSH_KEY_FORGES[a.source];
   const on = a.apply && a.enabled;
-  const error = accessError(a);
+  const error = accessError(wizardAccessForm(model, skipped));
   const keysError = error === 'editor.keysInvalid' || error === 'editor.keysNotImported' ? error : null;
   const importer = useKeyImport(a, (value) => patch('access', value));
 
@@ -46,11 +47,7 @@ export function WizardAccessStep({ wizard, uid }: { wizard: ProfileWizardState; 
           />
           <WizardToggle
             label={t('settings.autoconfig.editor.sshRootLogin')}
-            hint={
-              !a.rootLogin && model.user.mode === 'later' ? (
-                <FieldHint tone="warn">{t('settings.autoconfig.editor.sshRootNoUser')}</FieldHint>
-              ) : undefined
-            }
+            hint={error === 'editor.sshRootNoUser' ? <FieldHint tone="warn">{t(`settings.autoconfig.${error}`)}</FieldHint> : undefined}
             checked={a.rootLogin}
             onChange={(rootLogin) => patch('access', { rootLogin })}
           />

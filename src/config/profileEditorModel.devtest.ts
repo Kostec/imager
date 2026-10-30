@@ -6,12 +6,14 @@
 
 import * as autoconfig from './autoconfig';
 import * as model from './profileEditorModel';
+import * as wizard from './profileWizard';
 import type { AutoconfigConfig } from '../types';
 
 // Loose on purpose: the same file has to run before the model exists, to see it fail.
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const m = model as any;
 const a = autoconfig as any;
+const w = wizard as any;
 
 const PLAIN = 'correct horse battery';
 const HASH = '$6$salt$hash';
@@ -57,10 +59,56 @@ test('script over 64 KiB blocks, in bytes, and keeps the text', () => {
 });
 
 test('password login off without keys blocks; a key clears it', () => {
-  const f = form({ sshEnabled: true, sshPasswordAuth: false });
+  const f = form({ userName: 'pi', userPasswordHash: HASH, sshEnabled: true, sshPasswordAuth: false });
   same(blocked(f), 'access');
   f.access.keys = 'ssh-ed25519 AAAA me@host';
   same(blocked(f), null);
+});
+
+test('SSH on, no user and root login off blocks: nobody could log in over SSH', () => {
+  const f = form({ sshEnabled: true, sshRootLogin: false });
+  same(m.accessError(f), 'editor.sshRootNoUser');
+  same(blocked(f), 'access');
+  f.access.rootLogin = true;
+  same(blocked(f), null);
+  same(blocked(form({ sshEnabled: true, sshRootLogin: false, userName: 'pi', userPasswordHash: HASH })), null);
+  same(blocked(form({ sshEnabled: false })), null);
+});
+
+test('the wizard sees a skipped user step, also at the end', () => {
+  const f = form({ userName: 'pi', userPasswordHash: HASH, sshEnabled: true, sshRootLogin: false });
+  same(w.wizardStepError('access', f, {}), null);
+  same(w.wizardStepError('access', f, { user: true }), 'settings.autoconfig.editor.sshRootNoUser');
+  same(w.wizardProfileError(f, {}), null);
+  same(w.wizardProfileError(f, { user: true }), 'settings.autoconfig.editor.sshRootNoUser');
+  same(w.wizardProfileError(f, { user: true, access: true }), null);
+});
+
+test('a private key is refused and counts as no key', () => {
+  const pem = '-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAA\n-----END OPENSSH PRIVATE KEY-----';
+  same(a.countAuthorizedKeys(pem), 0);
+  same(a.areAuthorizedKeysValid(pem), false);
+  const f = form({ userName: 'pi', userPasswordHash: HASH, sshEnabled: true, sshPasswordAuth: false });
+  f.access.keys = pem;
+  same(m.accessError(f), 'editor.keysInvalid');
+  same(blocked(f), 'access');
+  f.access.passwordAuth = true;
+  same(blocked(f), 'access', 'with password login on');
+});
+
+test('only a line with a key type is a key', () => {
+  const keys = [
+    'ssh-ed25519 AAAAC3Nza me@host',
+    'ssh-rsa AAAAB3Nza==',
+    'ecdsa-sha2-nistp256 AAAAE2Vj',
+    'sk-ssh-ed25519@openssh.com AAAAGnNr',
+    'no-pty ssh-ed25519 AAAAC3Nza',
+  ];
+  same(a.countAuthorizedKeys(keys.join('\n')), keys.length);
+  same(a.areAuthorizedKeysValid(keys.join('\r\n')), true);
+  same(a.countAuthorizedKeys('# a comment\nssh-rsa AAAA'), 1);
+  same(a.areAuthorizedKeysValid('# a comment\nssh-rsa AAAA'), true);
+  for (const bad of ['hello', 'ssh-ed25519', 'ssh-ed25519 not*base64', '[Unit] ssh-rsa AAAA']) same(a.areAuthorizedKeysValid(bad), false, bad);
 });
 
 test('a filled key source that was not imported blocks', () => {
@@ -165,7 +213,14 @@ test('root/1234 warning: no user and no root password, with Wi-Fi or SSH', () =>
   same(a.defaultRootExposed({ wifiEnabled: true, rootPasswordHash: HASH }), false);
 });
 
+test('the root warning stays true whatever SSH does', () => {
+  same(a.defaultRootExposed({ wifiEnabled: true, sshEnabled: false }), true);
+  same(a.defaultRootExposed({ sshEnabled: true, sshRootLogin: true }), true);
+});
+
 test('connect hint names the user and host, or nothing when SSH is off', () => {
+  same(a.sshCommand({ sshEnabled: true, sshRootLogin: false }), null);
+  same(a.sshCommand({ hostname: 'wukong', sshRootLogin: false, userName: 'pi' }), 'ssh pi@wukong.local');
   same(a.sshCommand({ userName: 'pi', hostname: 'wukong' }), 'ssh pi@wukong.local');
   same(a.sshCommand({ hostname: 'wukong' }), 'ssh root@wukong.local');
   same(a.sshCommand({ userName: 'pi' }), 'ssh pi@wukongpi.local');

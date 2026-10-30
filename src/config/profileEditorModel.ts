@@ -253,14 +253,16 @@ export function keySourceFormatError(a: EditorModel['access']): string | null {
 }
 
 /** i18n key (under settings.autoconfig) of what is wrong with the SSH settings, or null */
-export function accessError(a: EditorModel['access']): string | null {
+export function accessError({ access: a, user }: Pick<EditorModel, 'access' | 'user'>): string | null {
   if (!a.apply || !a.enabled) return null;
   const format = keySourceFormatError(a);
   if (format) return format;
   // Typed but not imported: saving would silently lose the keys the user meant to add.
   if (keySourceValue(a)) return 'editor.keysNotImported';
   if (!areAuthorizedKeysValid(a.keys)) return 'editor.keysInvalid';
-  return !a.passwordAuth && !countAuthorizedKeys(a.keys) ? 'editor.sshNoWayIn' : null;
+  if (!a.passwordAuth && !countAuthorizedKeys(a.keys)) return 'editor.sshNoWayIn';
+  // Without a user only root is left, so a card written like this could not be reached over SSH at all.
+  return user.mode === 'later' && !a.rootLogin ? 'editor.sshRootNoUser' : null;
 }
 
 export function editorIpErrors(n: EditorModel['network']) {
@@ -321,7 +323,7 @@ export function profileProgress(form: EditorForm): ProfileProgress {
     name: form.name.trim() && (form.scope === 'all' || form.boards.length) ? 'set' : 'attn',
     network: !n.apply ? 'none' : networkBlocked(form) ? 'attn' : 'set',
     user: form.user.mode === 'later' ? 'none' : userError(form) ? 'attn' : 'set',
-    access: accessError(a) ? 'attn' : a.apply || a.rootPasswordHash || form.secrets.rootPassword ? 'set' : 'none',
+    access: accessError(form) ? 'attn' : a.apply || a.rootPasswordHash || form.secrets.rootPassword ? 'set' : 'none',
     region: r.apply && anyRegion ? 'set' : 'none',
     device: deviceBlocked(d) ? 'attn' : d.hostname.trim() || d.overlays.length || d.script.trim() ? 'set' : 'none',
   };
@@ -334,7 +336,7 @@ export function firstBlockingGroup(form: EditorForm): { group: EditorGroup; more
   if (!form.name.trim() || (form.scope === 'some' && !form.boards.length)) return { group: 'name' };
   if (networkBlocked(form)) return { group: 'network', more: wifiBlockedInMain(form) ? undefined : 'network' };
   if (userError(form)) return { group: 'user' };
-  if (accessError(form.access)) return { group: 'access' };
+  if (accessError(form)) return { group: 'access' };
   if (deviceBlocked(form.device)) return { group: 'device' };
   // A profile that leaves every area at the image's defaults would write nothing
   if (isFormEmpty(form)) return { group: 'network', empty: true };

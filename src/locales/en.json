@@ -86,7 +86,7 @@
       "catalogRefused": "The catalog marks this image as not taking settings.",
       "unavailable": "Settings are off for this image. {{reason}} It can still be written as it is.",
       "refused": "Nothing was written. {{reason}} Go back and write the image without a profile, or pick another image.",
-      "rootDefault": "No user and no root password are set, and the board is reachable: anyone on your network can log in as root with password 1234."
+      "rootDefault": "No user and no root password are set, so root keeps the password 1234. Set one of them if the board is on a network you do not fully trust."
     }
   },
   "modal": {
@@ -574,11 +574,11 @@
         "sshKeepHint": "Stays as in the image: SSH on, password login on, root login on.",
         "sshPasswordAuth": "Log in with a password",
         "sshRootLogin": "Allow root login",
-        "sshRootNoUser": "No user is created here, so without root login nobody can get in over SSH.",
+        "sshRootNoUser": "No user is created here: allow root login or create a user, otherwise nobody can get in over SSH.",
         "sshNoWayIn": "With password login off and no keys, nobody could log in. Add a key or turn password login on.",
         "sshKeys": "Public keys",
         "sshKeysHint": "One key per line. Added now: {{count}}.",
-        "keysInvalid": "Each line must be a public key; a line cannot start with [.",
+        "keysInvalid": "Paste public keys only, one per line, like ssh-ed25519 AAAA... A private key must never leave your computer.",
         "keysNotImported": "Press Import, or clear this field.",
         "importKeys": "Import",
         "wifiHidden": "Hidden network",

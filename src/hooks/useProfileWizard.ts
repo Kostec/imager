@@ -6,7 +6,8 @@ import { useTranslation } from 'react-i18next';
 import { keyLookupSource, localeForLanguage } from '../config/autoconfig';
 import { editorIpErrors, isFormEmpty, keySourceFormatError, sealEditorForm, type EditorForm, type MoreKey } from '../config/profileEditorModel';
 import {
-  WIZARD_STEPS, emptyWizardModel, isWizardItem, wizardFacts, wizardModel, wizardProfile, wizardStepBlocked, wizardStepError,
+  WIZARD_STEPS, emptyWizardModel, isWizardItem, wizardFacts, wizardModel, wizardProfile, wizardProfileError, wizardStepBlocked,
+  wizardStepError,
   type WizardSkips,
 } from '../config/profileWizard';
 import type { AutoconfigProfile, ProfileBoard } from '../types';
@@ -35,8 +36,9 @@ export function useProfileWizard(board: ProfileBoard | null, onSaved: (profile: 
   const [saving, setSaving] = useState(false);
 
   const step = WIZARD_STEPS[stepIndex];
-  const stepError = wizardStepError(step, model);
-  const blocked = wizardStepBlocked(step, model);
+  const stepError = wizardStepError(step, model, skipped);
+  const blocked = wizardStepBlocked(step, model, skipped);
+  const profileError = wizardProfileError(model, skipped);
   // Every area left at the image's defaults: nothing to write, so it cannot be created
   const empty = useMemo(() => isFormEmpty(wizardModel(model, skipped)), [model, skipped]);
   const ipErrors = editorIpErrors(model.network);
@@ -77,7 +79,7 @@ export function useProfileWizard(board: ProfileBoard | null, onSaved: (profile: 
   }
 
   async function create() {
-    if (!model.name.trim() || saving || empty) return;
+    if (!model.name.trim() || saving || empty || profileError) return;
     setSaving(true);
     try {
       const sealed = await sealEditorForm(wizardModel(model, skipped), { hashPassword, deriveWifiPsk });
@@ -95,7 +97,7 @@ export function useProfileWizard(board: ProfileBoard | null, onSaved: (profile: 
   const shownError = attempted && stepError ? t(stepError) : null;
 
   return {
-    model, skipped, step, stepIndex, furthest, more, attempted, saving, blocked, empty, stepError, shownError, ipErrors,
+    model, skipped, step, stepIndex, furthest, more, attempted, saving, blocked, empty, stepError, profileError, shownError, ipErrors,
     keyCheck, facts, set, patch, toggleMore, go, next, skip, create,
   };
 }

@@ -54,8 +54,12 @@ export function emptyWizardModel(defaults: { timezone: string; locale: string },
 
 const underAutoconfig = (key: string | null) => (key ? `settings.autoconfig.${key}` : null);
 
+/** The form the access step answers for: a skipped user step creates nobody */
+export const wizardAccessForm = (form: EditorForm, skipped: WizardSkips): EditorForm =>
+  skipped.user ? { ...form, user: { ...form.user, mode: 'later' } } : form;
+
 /** i18n key of what stops Next on a step, or null; the static IP checks show on their fields */
-export function wizardStepError(step: WizardStep, form: EditorForm): string | null {
+export function wizardStepError(step: WizardStep, form: EditorForm, skipped: WizardSkips = {}): string | null {
   switch (step) {
     case 'name':
       if (!form.name.trim()) return 'settings.autoconfig.nameRequired';
@@ -72,7 +76,7 @@ export function wizardStepError(step: WizardStep, form: EditorForm): string | nu
     case 'user':
       return underAutoconfig(userError(form));
     case 'access':
-      return underAutoconfig(accessError(form.access));
+      return underAutoconfig(accessError(wizardAccessForm(form, skipped)));
     case 'device':
       return underAutoconfig(hostnameError(form.device) ?? scriptError(form.device));
     default:
@@ -80,8 +84,8 @@ export function wizardStepError(step: WizardStep, form: EditorForm): string | nu
   }
 }
 
-export const wizardStepBlocked = (step: WizardStep, form: EditorForm): boolean =>
-  !!wizardStepError(step, form) || (step === 'network' && form.network.apply && Object.keys(editorIpErrors(form.network)).length > 0);
+export const wizardStepBlocked = (step: WizardStep, form: EditorForm, skipped: WizardSkips = {}): boolean =>
+  !!wizardStepError(step, form, skipped) || (step === 'network' && form.network.apply && Object.keys(editorIpErrors(form.network)).length > 0);
 
 /** A skipped step writes nothing, so the image keeps its own defaults there. */
 export function wizardModel(form: EditorForm, skipped: WizardSkips): EditorForm {
@@ -100,6 +104,10 @@ export function wizardModel(form: EditorForm, skipped: WizardSkips): EditorForm 
     },
   };
 }
+
+/** i18n key of what stops the profile as a whole: going back to an earlier step can undo what the access step checked */
+export const wizardProfileError = (form: EditorForm, skipped: WizardSkips): string | null =>
+  underAutoconfig(accessError(wizardModel(form, skipped)));
 
 /** Takes a sealed model: what reaches the profile has no plain text to carry. */
 export const wizardProfile = (m: EditorModel): Pick<AutoconfigProfile, 'name' | 'config' | 'boards'> => fromEditorModel(m);
