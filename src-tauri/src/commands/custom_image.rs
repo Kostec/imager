@@ -226,28 +226,46 @@ pub struct CustomImageClassification {
 
 #[derive(Debug, PartialEq, Eq)]
 enum AutoconfigRule {
-    Allowed,
     Refused,
-    ProbeMarker,
+    ProbeImage,
+    ProbeAfterDecompression,
 }
 
-// Without a board match, only a named Armbian build in an injectable format or a raw `.img` (probed) qualifies.
-fn autoconfig_rule(filename: &str, is_qdl: bool, board_matched: bool) -> AutoconfigRule {
-    if board_matched {
-        return AutoconfigRule::Allowed;
-    }
-    let lower = filename.to_lowercase();
-    let injectable = config::images::AUTOCONFIG_CUSTOM_EXTENSIONS
-        .iter()
-        .any(|ext| lower.ends_with(ext));
-    if is_qdl || !injectable {
+// Upstream's name-based rule is gone (see provision::probe_image); the constants stay for a smaller diff in config.
+const _: &[&str] = config::images::AUTOCONFIG_CUSTOM_EXTENSIONS;
+const _: &str = config::images::RAW_IMAGE_EXTENSION;
+
+// Only the probe decides; the name says no more than whether the file can be read as an image yet.
+fn autoconfig_rule(filename: &str, is_qdl: bool) -> AutoconfigRule {
+    if is_qdl {
         AutoconfigRule::Refused
-    } else if parse_armbian_filename(filename).is_some() {
-        AutoconfigRule::Allowed
-    } else if lower.ends_with(config::images::RAW_IMAGE_EXTENSION) {
-        AutoconfigRule::ProbeMarker
+    } else if !needs_decompression(Path::new(filename)) {
+        AutoconfigRule::ProbeImage
+    } else if filename.to_lowercase().contains(".tar.") {
+        AutoconfigRule::Refused
     } else {
-        AutoconfigRule::Refused
+        AutoconfigRule::ProbeAfterDecompression
+    }
+}
+
+// A compressed file stays eligible until `probe_custom_image` sees it decompressed; the flash probes again regardless.
+// A failed probe hides the picker; it never fails the classification.
+async fn supports_settings(path: &str, is_qdl: bool) -> bool {
+    let filename = Path::new(path)
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or(path);
+    match autoconfig_rule(filename, is_qdl) {
+        AutoconfigRule::Refused => false,
+        AutoconfigRule::ProbeAfterDecompression => true,
+        AutoconfigRule::ProbeImage => {
+            let probe_path = PathBuf::from(path);
+            tokio::task::spawn_blocking(move || {
+                crate::autoconfig::require_supported_image(&probe_path).is_ok()
+            })
+            .await
+            .unwrap_or(false)
+        }
     }
 }
 
@@ -267,19 +285,7 @@ pub async fn classify_custom_image(
         .unwrap_or(None);
 
     let is_qdl = is_qdl_image_path(&path);
-    let supports_autoconfig = match autoconfig_rule(filename, is_qdl, board.is_some()) {
-        AutoconfigRule::Allowed => true,
-        AutoconfigRule::Refused => false,
-        AutoconfigRule::ProbeMarker => {
-            let probe_path = PathBuf::from(&path);
-            // A failed probe hides the picker; it never fails the classification.
-            tokio::task::spawn_blocking(move || {
-                crate::autoconfig::require_supported_image(&probe_path).is_ok()
-            })
-            .await
-            .unwrap_or(false)
-        }
-    };
+    let supports_autoconfig = supports_settings(&path, is_qdl).await;
     log_info!(
         "custom_image",
         "Autoconfig profiles for {}: {}",
@@ -434,8 +440,8 @@ async fn match_board_from_filename(
 #[cfg(test)]
 mod tests {
     use super::{
-        autoconfig_rule, check_tar_for_qdl, remove_decompressed_image, AutoconfigRule,
-        OUTSIDE_DECOMPRESS_DIR,
+        autoconfig_rule, check_tar_for_qdl, remove_decompressed_image, supports_settings,
+        AutoconfigRule, OUTSIDE_DECOMPRESS_DIR,
     };
 
     fn decompress_fixture() -> (tempfile::TempDir, std::path::PathBuf, std::path::PathBuf) {
@@ -521,35 +527,89 @@ mod tests {
         assert!(outside.exists());
     }
 
+    const FIXTURE: &[u8] =
+        include_bytes!("../../../crates/classic-ext4/tests/fixtures/classic.img.gz");
+
+    fn in_dir(dir: &tempfile::TempDir, name: &str, bytes: &[u8]) -> String {
+        let path = dir.path().join(name);
+        std::fs::write(&path, bytes).unwrap();
+        path.to_string_lossy().into_owned()
+    }
+
+    fn classic_image() -> Vec<u8> {
+        use std::io::Read;
+        let mut out = Vec::new();
+        flate2::read::GzDecoder::new(FIXTURE)
+            .read_to_end(&mut out)
+            .unwrap();
+        out
+    }
+
+    #[tokio::test]
+    async fn any_uncompressed_name_with_a_good_ext4_takes_settings() {
+        let dir = tempfile::tempdir().unwrap();
+        let image = classic_image();
+        for name in ["hybrid.iso", "disk.raw", "no-extension", "my-build.IMG"] {
+            let path = in_dir(&dir, name, &image);
+            assert!(supports_settings(&path, false).await, "{name}");
+        }
+    }
+
+    #[tokio::test]
+    async fn an_armbian_name_gets_nothing_without_the_probe() {
+        let dir = tempfile::tempdir().unwrap();
+        let name = "Armbian_23.02.2_Wukongpi_bullseye_current_5.15.93.img";
+        let path = in_dir(&dir, name, &[0x5a; 64 * 1024]);
+        assert!(!supports_settings(&path, false).await);
+    }
+
+    #[tokio::test]
+    async fn an_iso_without_ext4_takes_no_settings() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = in_dir(&dir, "real.iso", &[0u8; 64 * 1024]);
+        assert!(!supports_settings(&path, false).await);
+    }
+
+    #[tokio::test]
+    async fn a_compressed_image_waits_for_the_probe_after_decompression() {
+        let dir = tempfile::tempdir().unwrap();
+        for name in ["build.img.xz", "build.img.gz", "build.img.zst", "b.iso.bz2"] {
+            let path = in_dir(&dir, name, b"not even a real archive");
+            assert!(supports_settings(&path, false).await, "{name}");
+        }
+    }
+
+    #[tokio::test]
+    async fn archives_and_qdl_packages_take_no_settings() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = in_dir(&dir, "rootfs.tar.xz", b"x");
+        assert!(!supports_settings(&path, false).await);
+        let path = in_dir(&dir, "flash.tar.xz", b"x");
+        assert!(!supports_settings(&path, true).await);
+        let image = in_dir(&dir, "qdl.img", &classic_image());
+        assert!(!supports_settings(&image, true).await);
+    }
+
     #[test]
-    fn custom_profiles_follow_name_format_and_board() {
+    fn the_name_never_grants_settings_by_itself() {
         use AutoconfigRule::*;
         let armbian = "Armbian-unofficial_26.05.0-trunk_Nanopi-r76s_trixie_edge_7.0.10_minimal";
         assert_eq!(
-            autoconfig_rule(&format!("{armbian}.img"), false, false),
-            Allowed
+            autoconfig_rule(&format!("{armbian}.img"), false),
+            ProbeImage
+        );
+        assert_eq!(autoconfig_rule("my-build.IMG", false), ProbeImage);
+        assert_eq!(autoconfig_rule("hybrid.iso", false), ProbeImage);
+        assert_eq!(
+            autoconfig_rule(&format!("{armbian}.img.xz"), false),
+            ProbeAfterDecompression
         );
         assert_eq!(
-            autoconfig_rule(&format!("{armbian}.img.xz"), false, false),
-            Allowed
+            autoconfig_rule("renamed.img.gz", false),
+            ProbeAfterDecompression
         );
-        assert_eq!(
-            autoconfig_rule(&format!("{armbian}.img.gz"), false, false),
-            Refused
-        );
-        assert_eq!(
-            autoconfig_rule(&format!("{armbian}.img.qcow2"), false, false),
-            Refused
-        );
-        assert_eq!(autoconfig_rule("my-build.IMG", false, false), ProbeMarker);
-        assert_eq!(autoconfig_rule("my-build.img.xz", false, false), Refused);
-        assert_eq!(autoconfig_rule("rootfs.tar.xz", false, false), Refused);
-        assert_eq!(
-            autoconfig_rule(&format!("{armbian}.tar.xz"), true, false),
-            Refused
-        );
-        assert_eq!(autoconfig_rule("anything.tar.xz", true, true), Allowed);
-        assert_eq!(autoconfig_rule("renamed.img.gz", false, true), Allowed);
+        assert_eq!(autoconfig_rule("rootfs.tar.xz", false), Refused);
+        assert_eq!(autoconfig_rule("anything.img", true), Refused);
     }
 
     /// Build an in-memory uncompressed tar from `(path, contents)` entries.

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-//! Settings as files: the drop-in, the device scripts and `firstboot.conf`. A pure function, the image is not involved.
+//! Settings as files: the drop-in, the device scripts and `firstboot.env`. A pure function, the image is not involved.
 
 use super::config::AutoconfigConfig;
 use super::secrets::is_wifi_psk;
@@ -16,7 +16,7 @@ const USER_NAME_MAX_BYTES: usize = 32;
 const SSID_MAX_BYTES: usize = 32;
 const MODE_DROPIN: u16 = 0o644;
 const MODE_SCRIPT: u16 = 0o755;
-const MODE_CONF: u16 = 0o600;
+const MODE_ENV: u16 = 0o600;
 const MODE_USER_SCRIPT: u16 = 0o700;
 
 /// A file to create on the card, owned by root.
@@ -66,7 +66,7 @@ fn key_lines(value: &str) -> String {
     lines.join("\n")
 }
 
-/// What `firstboot.conf` will hold, in file order; `ethernet_enabled` has no key, Ethernet is never touched.
+/// What `firstboot.env` will hold, in file order; `ethernet_enabled` has no key, Ethernet is never touched.
 fn assignments(cfg: &AutoconfigConfig) -> Vec<(&'static str, String)> {
     let mut out = Vec::new();
     let mut push = |key: &'static str, value: Option<String>| {
@@ -204,7 +204,6 @@ fn has_no_control(value: &str) -> bool {
 }
 
 /// Scripts run these as root and some go through sed, so each must be exactly what its key expects.
-/// `firstboot.conf` also sits where systemd reads `*.conf`: no value may start a section on a line of its own.
 fn check(key: &str, value: &str) -> Result<(), ProvisionError> {
     let ok = match key {
         "WK_HOSTNAME" => is_hostname(value),
@@ -230,9 +229,7 @@ fn check(key: &str, value: &str) -> Result<(), ProvisionError> {
         "WK_USER_NAME" => is_user_name(value),
         "WK_USER_REALNAME" => has_no_control(value),
         "WK_USER_HASH" | "WK_ROOT_HASH" => is_sha512_hash(value),
-        "WK_SSH_KEYS" => value
-            .lines()
-            .all(|line| has_no_control(line) && !line.starts_with('[')),
+        "WK_SSH_KEYS" => value.lines().all(has_no_control),
         "WK_OVERLAYS" => value.split(' ').all(|overlay| {
             only(overlay, |b| {
                 b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-'
@@ -253,6 +250,10 @@ fn check_required(lines: &[(&'static str, String)]) -> Result<(), ProvisionError
     if has("WK_WIFI_ENABLED") && !has("WK_WIFI_SSID") {
         return invalid("WK_WIFI_SSID");
     }
+    // firstboot.sh locks root for a user with sudo, and sudo needs that user's password: without either hash, no way to root.
+    if has("WK_USER_NAME") && !has("WK_USER_HASH") && !has("WK_ROOT_HASH") {
+        return invalid("WK_USER_HASH");
+    }
     if has("WK_STATIC_ENABLED") {
         for key in ["WK_STATIC_IP", "WK_STATIC_PREFIX"] {
             if !has(key) {
@@ -264,7 +265,7 @@ fn check_required(lines: &[(&'static str, String)]) -> Result<(), ProvisionError
 }
 
 /// `KEY='value'`, safe to source: inside single quotes only the quote itself needs care.
-fn render_conf(lines: &[(&'static str, String)]) -> String {
+fn render_env(lines: &[(&'static str, String)]) -> String {
     let mut out = String::new();
     for (key, value) in lines {
         out.push_str(key);
@@ -323,11 +324,7 @@ pub fn render_bundle(cfg: &AutoconfigConfig) -> Result<Vec<BundleFile>, Provisio
             MODE_SCRIPT,
             POST_NETWORK_SH.as_bytes().to_vec(),
         ),
-        file(
-            "firstboot.conf",
-            MODE_CONF,
-            render_conf(&lines).into_bytes(),
-        ),
+        file("firstboot.env", MODE_ENV, render_env(&lines).into_bytes()),
     ];
     if let Some(script) = script {
         files.push(file(
@@ -397,9 +394,9 @@ mod tests {
             .unwrap_or_else(|| panic!("no {path}"))
     }
 
-    fn conf(config: &AutoconfigConfig) -> String {
+    fn env(config: &AutoconfigConfig) -> String {
         let files = render_bundle(config).unwrap();
-        String::from_utf8(file(&files, "firstboot.conf").data.clone()).unwrap()
+        String::from_utf8(file(&files, "firstboot.env").data.clone()).unwrap()
     }
 
     fn assert_refused(config: AutoconfigConfig, secret: &str) {
@@ -445,7 +442,7 @@ mod tests {
             ..AutoconfigConfig::default()
         };
         assert!(!is_empty(&config));
-        assert_eq!(conf(&config), "WK_HOSTNAME='wukong'\n");
+        assert_eq!(env(&config), "WK_HOSTNAME='wukong'\n");
     }
 
     #[test]
@@ -461,11 +458,43 @@ mod tests {
                 ("10-wukong.conf", 0o644),
                 ("firstboot.sh", 0o755),
                 ("post-network.sh", 0o755),
-                ("firstboot.conf", 0o600),
+                ("firstboot.env", 0o600),
                 ("user-script.sh", 0o700),
             ]
         );
         assert!(files.iter().all(|f| f.path.starts_with(DIR)));
+    }
+
+    #[test]
+    fn a_user_without_a_password_needs_a_root_password() {
+        let keys_only = || AutoconfigConfig {
+            user_name: s("anna"),
+            ssh_authorized_keys: s("ssh-ed25519 AAAA one"),
+            ..AutoconfigConfig::default()
+        };
+        // Nothing could become root: sudo asks for a password and root gets locked.
+        assert_refused(keys_only(), "no value to look for");
+        assert!(render_bundle(&AutoconfigConfig {
+            root_password_hash: s(HASH),
+            ..keys_only()
+        })
+        .is_ok());
+        assert!(render_bundle(&AutoconfigConfig {
+            user_password_hash: s(HASH),
+            ..keys_only()
+        })
+        .is_ok());
+    }
+
+    #[test]
+    fn systemd_reads_only_the_dropin_from_this_directory() {
+        let conf_files: Vec<String> = render_bundle(&full())
+            .unwrap()
+            .into_iter()
+            .map(|f| f.path)
+            .filter(|p| p.ends_with(".conf"))
+            .collect();
+        assert_eq!(conf_files, [format!("{DIR}/10-wukong.conf")]);
     }
 
     #[test]
@@ -494,7 +523,7 @@ mod tests {
     #[test]
     fn a_full_profile_renders_every_key_once() {
         assert_eq!(
-            conf(&full()),
+            env(&full()),
             format!(
                 "WK_HOSTNAME='wukong'\n\
                  WK_TIMEZONE='Europe/Moscow'\n\
@@ -531,7 +560,7 @@ mod tests {
             wifi_ssid: s(" Кафе's $HOME `x` \"y\" \\ "),
             ..wifi()
         };
-        assert!(conf(&config).contains("WK_WIFI_SSID=' Кафе'\\''s $HOME `x` \"y\" \\ '\n"));
+        assert!(env(&config).contains("WK_WIFI_SSID=' Кафе'\\''s $HOME `x` \"y\" \\ '\n"));
     }
 
     #[cfg(unix)]
@@ -546,8 +575,8 @@ mod tests {
             ..wifi()
         };
         let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("firstboot.conf");
-        std::fs::write(&path, conf(&config)).unwrap();
+        let path = dir.path().join("firstboot.env");
+        std::fs::write(&path, env(&config)).unwrap();
         let read = |name: &str| {
             let script = format!(". '{}'; printf %s \"${name}\"", path.display());
             let out = Command::new("bash").args(["-c", &script]).output().unwrap();
@@ -565,7 +594,7 @@ mod tests {
             use_static_ip: Some(false),
             ..full()
         };
-        let text = conf(&config);
+        let text = env(&config);
         assert!(!text.contains("WK_WIFI"), "{text}");
         assert!(!text.contains("WK_STATIC"), "{text}");
     }
@@ -576,7 +605,7 @@ mod tests {
             wifi_psk: None,
             ..wifi()
         };
-        assert!(!conf(&config).contains("WK_WIFI_PSK"));
+        assert!(!env(&config).contains("WK_WIFI_PSK"));
     }
 
     #[test]
@@ -588,8 +617,8 @@ mod tests {
             static_mask: s(mask),
             ..AutoconfigConfig::default()
         };
-        assert!(conf(&with_mask("255.255.0.0")).contains("WK_STATIC_PREFIX='16'\n"));
-        assert!(conf(&with_mask("22")).contains("WK_STATIC_PREFIX='22'\n"));
+        assert!(env(&with_mask("255.255.0.0")).contains("WK_STATIC_PREFIX='16'\n"));
+        assert!(env(&with_mask("22")).contains("WK_STATIC_PREFIX='22'\n"));
         for bad in ["255.0.255.0", "33", "mask", "255.255.255.0.0"] {
             assert_refused(with_mask(bad), bad);
         }
@@ -691,10 +720,6 @@ mod tests {
             },
             AutoconfigConfig {
                 user_real_name: s("x\ny"),
-                ..AutoconfigConfig::default()
-            },
-            AutoconfigConfig {
-                ssh_authorized_keys: s("ssh-rsa AAAA\n[Service]\nExecStartPre=/bin/x"),
                 ..AutoconfigConfig::default()
             },
             AutoconfigConfig {

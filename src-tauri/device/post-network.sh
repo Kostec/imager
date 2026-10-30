@@ -3,13 +3,13 @@
 #
 # firstboot.sh starts this as wukong-post-network.service, and it stays enabled
 # until it has finished, so a power cut repeats it on the next boot. It waits
-# for a route, the clock and avahi-daemon, runs the user's script and wipes
-# everything the imager left on the card, itself included.
+# for a route, the clock and avahi-daemon, wipes everything the imager left on
+# the card, itself included, and then runs the user's script once from RAM.
 #
-# Never print a value from firstboot.conf, and no `set -x`.
+# Never print a value from firstboot.env, and no `set -x`.
 
 WK_DIR=/etc/systemd/system/armbian-firstrun.service.d
-WK_CONF=$WK_DIR/firstboot.conf
+WK_ENV=$WK_DIR/firstboot.env
 WK_LOG=/var/log/wukong-firstboot.log
 WK_POST_UNIT=/etc/systemd/system/wukong-post-network.service
 ROUTE_WAIT_SECS=120
@@ -17,6 +17,8 @@ CLOCK_WAIT_SECS=60
 APT_TIMEOUT_SECS=300
 APT_LOCK_WAIT_SECS=120
 USER_SCRIPT_TIMEOUT_SECS=300
+USER_SCRIPT_KILL_SECS=10
+USER_SCRIPT_RUN=/run/wukong-user-script.sh
 
 # apt and the user's script must leave files others can read, as under a login shell.
 umask 022
@@ -64,27 +66,48 @@ install_avahi() {
 	fi
 }
 
+# The script runs from RAM, after the wipe: a reboot or a kill inside it can neither leave settings on the card nor repeat it.
+stage_user_script() {
+	if [[ -f $WK_DIR/user-script.sh ]]; then
+		install -m 700 "$WK_DIR/user-script.sh" "$USER_SCRIPT_RUN"
+	fi
+}
+
 run_user_script() {
 	local status
-	timeout "$USER_SCRIPT_TIMEOUT_SECS" /bin/bash "$WK_DIR/user-script.sh" >>"$WK_LOG" 2>&1
+	timeout --kill-after="$USER_SCRIPT_KILL_SECS" "$USER_SCRIPT_TIMEOUT_SECS" /bin/bash "$USER_SCRIPT_RUN" >>"$WK_LOG" 2>&1
 	status=$?
+	rm -f "$USER_SCRIPT_RUN"
 	if ((status == 0)); then
 		log "OK user script"
-	elif ((status == 124)); then
+	elif ((status == 124 || status == 137)); then
 		log "FAIL user script stopped after ${USER_SCRIPT_TIMEOUT_SECS}s"
 	else
 		log "FAIL user script (exit $status)"
 	fi
 }
 
-# Runs from the very file it overwrites: bash has parsed all of it by the time main starts.
+wipe_file() {
+	shred -u -n 1 "$1" || rm -f "$1"
+	sync
+}
+
+# Settings first, then whatever a repeat does not need. This script goes last and the service stays enabled until then,
+# so a power cut at any point runs the rest on the next boot. Bash has parsed all of it by the time main starts.
 wipe_everything() {
-	local file
-	systemctl disable wukong-post-network.service >/dev/null 2>&1
+	local file self=$WK_DIR/post-network.sh
+	[[ -e $WK_ENV ]] && wipe_file "$WK_ENV"
 	for file in "$WK_DIR"/*; do
-		shred -u -n 1 "$file" || rm -f "$file"
+		[[ $file == "$self" ]] || wipe_file "$file"
 	done
+	# Renamed first: the unit must never start a half-overwritten file.
+	if [[ -e $self ]]; then
+		mv -f "$self" "$self.wiping"
+		sync
+	fi
+	wipe_file "$self.wiping"
 	rmdir "$WK_DIR"
+	systemctl disable wukong-post-network.service >/dev/null 2>&1
 	rm -f "$WK_POST_UNIT"
 	systemctl daemon-reload
 	sync
@@ -93,9 +116,9 @@ wipe_everything() {
 
 main() {
 	local online=
-	if [[ -r $WK_CONF ]]; then
+	if [[ -r $WK_ENV ]]; then
 		# shellcheck source=/dev/null
-		. "$WK_CONF"
+		. "$WK_ENV"
 	fi
 	log "started"
 
@@ -110,11 +133,12 @@ main() {
 			log "FAIL avahi-daemon skipped, no network"
 		fi
 	fi
-	if [[ -f $WK_DIR/user-script.sh ]]; then
+
+	stage_user_script
+	wipe_everything
+	if [[ -f $USER_SCRIPT_RUN ]]; then
 		run_user_script
 	fi
-
-	wipe_everything
 	log "finished"
 }
 

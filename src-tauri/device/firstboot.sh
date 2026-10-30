@@ -11,13 +11,15 @@
 # `set -x`. No `set -e` either: a failed step is logged and the rest goes on.
 
 WK_DIR=/etc/systemd/system/armbian-firstrun.service.d
-WK_CONF=$WK_DIR/firstboot.conf
+WK_ENV=$WK_DIR/firstboot.env
 WK_LOG=/var/log/wukong-firstboot.log
 WK_POST_UNIT=/etc/systemd/system/wukong-post-network.service
 NM_DIR=/etc/NetworkManager/system-connections
 USER_GROUPS="sudo netdev audio video disk tty users games dialout plugdev input bluetooth systemd-journal ssh"
 
-# Set by apply_user: only then is it safe to lock root or drop the first-login wizard.
+# What actually worked. Root is locked and the first-login wizard dropped on these, not on what the profile asked for.
+user_has_password=
+user_has_keys=
 user_can_log_in=
 
 # Secrets live here, and in the profiles written below.
@@ -157,19 +159,29 @@ apply_user() {
 	done
 	if [[ -n ${WK_USER_HASH:-} ]]; then
 		printf '%s:%s\n' "$name" "$WK_USER_HASH" | chpasswd -e 2>/dev/null || return 1
-		user_can_log_in=1
-	fi
-	if [[ -n ${WK_SSH_KEYS:-} ]]; then
-		user_can_log_in=1
+		user_has_password=1
 	fi
 	touch "/home/$name/.Xauthority"
 	chown "$name:" "/home/$name/.Xauthority"
 }
 
+# Keys open nothing while ssh is masked.
+decide_login() {
+	if [[ -n $user_has_password ]]; then
+		user_can_log_in=1
+	elif [[ -n $user_has_keys && ${WK_SSH_ENABLED:-} != 0 ]]; then
+		user_can_log_in=1
+	fi
+}
+
+user_has_sudo() {
+	[[ -n $user_has_password && " $(id -nG "$WK_USER_NAME") " == *" sudo "* ]]
+}
+
 apply_root() {
 	if [[ -n ${WK_ROOT_HASH:-} ]]; then
 		printf 'root:%s\n' "$WK_ROOT_HASH" | chpasswd -e 2>/dev/null
-	elif [[ -n ${WK_USER_NAME:-} && -n $user_can_log_in ]]; then
+	elif user_has_sudo; then
 		passwd -l root >/dev/null || return 1
 		# The image marks root's password as expired for the wizard, and PAM then refuses root's cron jobs.
 		chage -d "$(date +%F)" root
@@ -189,7 +201,9 @@ install_keys() {
 apply_ssh_keys() {
 	local status=0
 	if [[ -n ${WK_USER_NAME:-} ]]; then
-		if ! id -u "$WK_USER_NAME" >/dev/null 2>&1 || ! install_keys "$WK_USER_NAME" "/home/$WK_USER_NAME"; then
+		if id -u "$WK_USER_NAME" >/dev/null 2>&1 && install_keys "$WK_USER_NAME" "/home/$WK_USER_NAME"; then
+			user_has_keys=1
+		else
 			status=1
 		fi
 	fi
@@ -300,6 +314,7 @@ start_post_network() {
 [Unit]
 Description=Wukong first boot, stage after the network
 After=network.target armbian-firstrun.service
+ConditionPathExists=$WK_DIR/post-network.sh
 
 [Service]
 Type=simple
@@ -315,12 +330,12 @@ EOF
 }
 
 main() {
-	if [[ ! -r $WK_CONF ]]; then
+	if [[ ! -r $WK_ENV ]]; then
 		log "no settings file, nothing to do"
 		return 0
 	fi
 	# shellcheck source=/dev/null
-	. "$WK_CONF"
+	. "$WK_ENV"
 	log "started"
 
 	[[ -n ${WK_HOSTNAME:-} ]] && step hostname apply_hostname
@@ -334,10 +349,11 @@ main() {
 		step ethernet apply_ethernet
 	fi
 	[[ -n ${WK_USER_NAME:-} ]] && step user apply_user
-	[[ -n ${WK_ROOT_HASH:-} || -n $user_can_log_in ]] && step root apply_root
 	[[ -n ${WK_SSH_KEYS:-} ]] && step ssh-keys apply_ssh_keys
 	[[ -n ${WK_SSH_PASSWORD_AUTH:-}${WK_SSH_ROOT_LOGIN:-} ]] && step sshd apply_sshd
 	[[ -n ${WK_SSH_ENABLED:-} ]] && step ssh-service apply_ssh_service
+	decide_login
+	[[ -n ${WK_ROOT_HASH:-} ]] || user_has_sudo && step root apply_root
 	[[ -n ${WK_OVERLAYS:-} ]] && step overlays apply_overlays
 	[[ -n $user_can_log_in ]] && step skip-wizard skip_wizard
 	step post-network start_post_network
