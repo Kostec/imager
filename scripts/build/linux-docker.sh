@@ -122,10 +122,37 @@ docker run --rm \
     npm ci
     npx tauri build --bundles deb,appimage
 
+    # Same step as CI. A Windows checkout has CRLF scripts, which bash refuses, and the
+    # AppImage must really extract here, not extract and run the app.
+    tr -d "\r" < scripts/build/appimage-unbundle-wayland.sh > /tmp/appimage-unbundle-wayland.sh
+    # Extraction leaves 0700 directories, which the current appimagetool refuses to pack.
+    sed -i "/--appimage-extract-and-run so appimagetool/i chmod -R a+rX \"\$EXTRACT_DIR/squashfs-root\"" \
+      /tmp/appimage-unbundle-wayland.sh
+    grep -q "chmod -R a+rX" /tmp/appimage-unbundle-wayland.sh
+    env -u APPIMAGE_EXTRACT_AND_RUN bash /tmp/appimage-unbundle-wayland.sh
+
     out="/source/${OUTPUT_SUBDIR}"
+    rm -f "$out"/*.deb "$out"/*.AppImage "$out"/*.appimage
     for f in src-tauri/target/release/bundle/deb/*.deb src-tauri/target/release/bundle/appimage/*.AppImage; do
-      cp -f "$f" "$out/$(basename "$f" | tr " " "-" | tr "[:upper:]" "[:lower:]")"
+      name="$(basename "$f")"
+      name="${name// /-}"
+      stem="${name%.*}"
+      cp -f "$f" "$out/${stem,,}.${name##*.}"
     done
+
+    # Fail the build if the published AppImage still carries libwayland.
+    check_dir="$(mktemp -d)"
+    app="$(realpath "$out"/*.AppImage)"
+    (cd "$check_dir" && env -u APPIMAGE_EXTRACT_AND_RUN "$app" --appimage-extract >/dev/null)
+    bundled="$(find "$check_dir/squashfs-root" -name "libwayland-*.so*")"
+    rm -rf "$check_dir"
+    if [ -n "$bundled" ]; then
+      echo "AppImage still bundles libwayland:" >&2
+      echo "$bundled" >&2
+      exit 1
+    fi
+    echo "AppImage bundles no libwayland"
+
     dpkg-deb -f "$out"/*.deb Package Version
     ls -la "$out"
   '
