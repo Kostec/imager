@@ -5,7 +5,6 @@ import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react'
 import { createPortal } from 'react-dom';
 import { DevLauncher } from './DevLauncher';
 import { DevDrawer } from './DevDrawer';
-import { useSimulatedUpdate } from './useSimulatedUpdate';
 import { useDevScenario } from '../../hooks/useDevScenario';
 import { useModalExitAnimation } from '../../hooks/useModalExitAnimation';
 import { useRestoreSavedAppearance } from '../../hooks/useRestoreSavedAppearance';
@@ -38,7 +37,6 @@ export default function DevScenarios({
 }: DevScenariosProps) {
   const dev = useDevScenario();
   const fullscreen = useWindowFullscreen();
-  const { simulated, clear: clearSimulatedUpdate } = useSimulatedUpdate();
   const restoreSavedAppearance = useRestoreSavedAppearance();
   const launcherRef = useRef<HTMLButtonElement>(null);
   const drawerRef = useRef<HTMLDivElement>(null);
@@ -60,7 +58,6 @@ export default function DevScenarios({
 
   const endSimulation = useEffectEvent(() => {
     void dev.resetSilently();
-    if (simulated) void clearSimulatedUpdate();
     restoreSavedAppearance().catch((err) =>
       logWarn('dev', `Saved appearance not restored: ${getErrorMessage(err, 'unknown error')}`)
     );
@@ -104,8 +101,7 @@ export default function DevScenarios({
 
   if (!dev.status || hidden) return null;
 
-  const updateSimulated = simulated !== null;
-  const active = dev.status.active || updateSimulated;
+  const { active } = dev.status;
 
   return createPortal(
     <div id={DEV_SCENARIOS.ROOT_ID} className={ROOT_CLASS}>
@@ -118,7 +114,7 @@ export default function DevScenarios({
           compact={inFlashFlow}
           isExiting={isExiting}
           isFlashing={isFlashing}
-          updateSimulated={updateSimulated}
+          updateSimulated={false}
           shortcut={SHORTCUT}
           onClose={handleClose}
           onUseCustomImage={onUseCustomImage}

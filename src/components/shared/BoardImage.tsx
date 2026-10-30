@@ -11,7 +11,7 @@ interface BoardImageProps {
   onLoad?: (event: React.SyntheticEvent<HTMLImageElement>) => void;
 }
 
-// Board photo with a faded Armbian wordmark watermark fallback when missing or it errors.
+// Board photo with a faded app icon watermark fallback when missing or it errors.
 export function BoardImage({ src, alt, className, onLoad }: BoardImageProps) {
   const [failed, setFailed] = useState(false);
   const [lastSrc, setLastSrc] = useState(src);

@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright (c) 2025-2026 Daniele Briguglio, superkali@armbian.com
 
-import { Upload, ExternalLink, CircleAlert, CircleX, RotateCcw } from 'lucide-react';
+import { CircleAlert, CircleX, RotateCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useLogUpload } from '../../hooks/useLogUpload';
 import { UI } from '../../config';
-import { LogUploadRemedy } from './LogUploadRemedy';
 
 interface ErrorDisplayProps {
   error: string;
@@ -17,7 +15,6 @@ interface ErrorDisplayProps {
 
 function CompactErrorDisplay({ message, onRetry }: { message: string; onRetry?: () => void }) {
   const { t } = useTranslation();
-  const { upload, uploading, url: pasteUrl, error: uploadError, open } = useLogUpload();
 
   return (
     <div className="error-display-compact">
@@ -31,28 +28,7 @@ function CompactErrorDisplay({ message, onRetry }: { message: string; onRetry?: 
             {t('errorDisplay.retry')}
           </button>
         )}
-        {!pasteUrl ? (
-          <button
-            className="btn btn-secondary btn-sm"
-            onClick={upload}
-            disabled={uploading}
-          >
-            <Upload size={14} />
-            {uploading ? t('errorDisplay.uploading') : t('errorDisplay.uploadLogs')}
-          </button>
-        ) : (
-          <button className="btn btn-secondary btn-sm" onClick={open}>
-            <ExternalLink size={14} />
-            {t('errorDisplay.viewLogs')}
-          </button>
-        )}
       </div>
-      {uploadError && (
-        <div className="error-display-upload-error">
-          <CircleAlert size={12} />
-          <span>{uploadError}</span>
-        </div>
-      )}
     </div>
   );
 }
@@ -75,8 +51,6 @@ export function ErrorDisplay({ error, onRetry, onCancel, compact = false }: Erro
       <div className="error-screen__main">
         <h2 className="error-screen__title">{t('flash.failed')}</h2>
         <p className="error-screen__hint">{message}</p>
-
-        <LogUploadRemedy />
 
         {(onRetry || onCancel) && (
           <div className="error-screen__buttons">

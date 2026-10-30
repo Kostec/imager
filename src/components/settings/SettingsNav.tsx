@@ -3,7 +3,7 @@
 
 import { useId, type Ref } from 'react';
 import { useTranslation } from 'react-i18next';
-import { SETTINGS_VIEW } from '../../config';
+import { FEATURES, SETTINGS_VIEW } from '../../config';
 import { NAV_ICONS } from '../../config/heroArt';
 import { useSettingsSummary } from '../../hooks/useSettingsSummary';
 import type { SettingsView } from '../../types';
@@ -11,7 +11,7 @@ import type { SettingsView } from '../../types';
 const NAV_ORDER: readonly SettingsView[] = [
   SETTINGS_VIEW.GENERAL,
   SETTINGS_VIEW.WRITING,
-  SETTINGS_VIEW.PROFILES,
+  ...(FEATURES.AUTOCONFIG ? [SETTINGS_VIEW.PROFILES] : []),
   SETTINGS_VIEW.DOWNLOADS,
   SETTINGS_VIEW.ABOUT,
 ];

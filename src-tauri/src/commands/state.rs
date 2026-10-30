@@ -12,9 +12,9 @@ use crate::images::{ApiBoardSummary, ApiVendor};
 
 /// Application state shared across all commands
 pub struct AppState {
-    /// Cached board list from the REST API
+    /// Cached board list from the active catalog
     pub boards: Mutex<Option<Vec<ApiBoardSummary>>>,
-    /// Cached vendor list from the REST API
+    /// Cached vendor list from the active catalog
     pub vendors: Mutex<Option<Vec<ApiVendor>>>,
     pub download_state: Arc<DownloadState>,
     pub flash_state: Arc<FlashState>,

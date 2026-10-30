@@ -9,10 +9,10 @@
 /// Application metadata
 pub mod app {
     /// Application name used for cache directories
-    pub const NAME: &str = "armbian-imager";
+    pub const NAME: &str = "wukong-imager";
 
     /// User agent for HTTP requests
-    pub const USER_AGENT: &str = "Armbian-Imager/1.0";
+    pub const USER_AGENT: &str = "Wukong-Imager/1.0";
 
     /// Settings store shared with the frontend (tauri-plugin-store)
     pub const SETTINGS_STORE: &str = "settings.json";
@@ -23,27 +23,13 @@ pub mod app {
 
 /// API endpoints and URLs
 pub mod urls {
+    /// Only the QDL code reaches this; flashing a Wukong board never does.
     const API_BASE_DEFAULT: &str = "https://api.armbian.com/api/v1";
 
-    /// Armbian REST API base. Overridable at runtime via `ARMBIAN_API_BASE` so a
-    /// dev/test build can be pointed at a local API without a rebuild.
+    /// Armbian REST API base, kept for the QDL code. Overridable at runtime via `ARMBIAN_API_BASE`.
     pub fn api_base() -> String {
         std::env::var("ARMBIAN_API_BASE").unwrap_or_else(|_| API_BASE_DEFAULT.to_string())
     }
-
-    /// Health check endpoint (no auth required)
-    pub fn health() -> String {
-        format!("{}/health", api_base())
-    }
-
-    /// Base URL for board images (api.armbian.com/api/v1/images/boards/{size}/{slug}.png)
-    pub const BOARD_IMAGES_BASE: &str = "https://api.armbian.com/api/v1/images/boards/";
-
-    /// Default image size for board photos (480px width, natural aspect ratio)
-    pub const BOARD_IMAGE_SIZE: &str = "480";
-
-    /// Base URL for vendor logos (api.armbian.com/api/v1/images/vendors/{size}/{slug}.png)
-    pub const VENDOR_IMAGES_BASE: &str = "https://api.armbian.com/api/v1/images/vendors/480/";
 
     /// Base URL for QDL firehose loaders / provisioning XML, served by the API blob
     /// proxy ({base}{family}/{path}). Follows `api_base` so it routes locally in dev.
@@ -125,6 +111,12 @@ pub mod autoconfig {
 pub mod log_files {
     /// Maximum number of log files to retain (oldest are deleted)
     pub const MAX_LOG_FILES: usize = 10;
+
+    /// Above this size only the last MAX_LOG_LINES lines are shown (5 MB)
+    pub const MAX_LOG_SIZE: u64 = 5 * 1024 * 1024;
+
+    /// Maximum log lines to process
+    pub const MAX_LOG_LINES: usize = 10_000;
 }
 
 /// Progress logging intervals
@@ -145,15 +137,6 @@ pub mod logging {
     pub const LINUX_SYNC_INTERVAL: u64 = 32 * 1024 * 1024;
 }
 
-/// Log paste service settings
-pub mod paste {
-    /// Maximum log file size to upload (5 MB)
-    pub const MAX_LOG_SIZE: u64 = 5 * 1024 * 1024;
-
-    /// Maximum log lines to process
-    pub const MAX_LOG_LINES: usize = 10_000;
-}
-
 /// HTTP client settings
 pub mod http {
     /// Connection timeout in seconds
@@ -168,8 +151,8 @@ pub mod http {
     /// Client identification header name for the Armbian REST API
     pub const CLIENT_HEADER_NAME: &str = "X-Armbian-Client";
 
-    /// Client identification header value for the Armbian Imager
-    pub const CLIENT_HEADER_VALUE: &str = "armbian-imager";
+    /// Client identification header value
+    pub const CLIENT_HEADER_VALUE: &str = "wukong-imager";
 }
 
 /// Public SSH key lookup behind a profile's key source (PRESET_USER_KEY / PRESET_ROOT_KEY)
@@ -347,4 +330,35 @@ pub mod dev {
     pub const PRESET_SLOW_WRITE_MB_PER_SEC: u32 = 4;
     pub const PRESET_SLOW_VERIFY_MB_PER_SEC: u32 = 8;
     pub const PRESET_SLOW_DOWNLOAD_KB_PER_SEC: u32 = 256;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::app;
+    use serde_json::Value;
+
+    fn tauri_conf() -> Value {
+        serde_json::from_str(include_str!("../../tauri.conf.json")).unwrap()
+    }
+
+    #[test]
+    fn the_cache_directory_is_named_after_the_app() {
+        assert_eq!(app::NAME, "wukong-imager");
+    }
+
+    #[test]
+    fn the_package_identity_is_wukong_imager() {
+        assert_eq!(env!("CARGO_PKG_NAME"), "wukong-imager");
+        let conf = tauri_conf();
+        assert_eq!(conf["productName"], "Wukong Imager");
+        assert_eq!(conf["identifier"], "io.github.kostec.wukongimager");
+        assert_eq!(conf["app"]["windows"][0]["title"], "Wukong Imager");
+    }
+
+    #[test]
+    fn the_bundle_needs_no_updater_signing_key() {
+        let conf = tauri_conf();
+        assert_eq!(conf["bundle"]["createUpdaterArtifacts"], false);
+        assert!(conf["plugins"].get("updater").is_none());
+    }
 }

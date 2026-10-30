@@ -258,7 +258,7 @@ pub fn sweep_dir(
 /// A fresh, created directory under the system temp dir for one test.
 #[cfg(test)]
 pub fn test_scratch_dir(tag: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("armbian-imager-{tag}-{}", unique_suffix()));
+    let dir = std::env::temp_dir().join(format!("wukong-imager-{tag}-{}", unique_suffix()));
     std::fs::create_dir_all(&dir).unwrap();
     dir
 }

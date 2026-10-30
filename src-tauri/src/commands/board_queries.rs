@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright (c) 2025-2026 Daniele Briguglio, superkali@armbian.com
 
-//! Board and image queries: fetch and filter board/image data from the Armbian REST API.
+//! Board and image queries: fetch and filter board/image data from the active catalog.
 
 use std::collections::HashSet;
 use std::sync::Mutex;
@@ -22,7 +22,7 @@ use super::state::AppState;
 /// Track previously seen device paths to detect changes
 static PREV_DEVICE_PATHS: Lazy<Mutex<HashSet<String>>> = Lazy::new(|| Mutex::new(HashSet::new()));
 
-/// Get list of available boards from the Armbian REST API
+/// Get list of available boards from the active catalog
 #[tauri::command]
 pub async fn get_boards(state: State<'_, AppState>) -> Result<Vec<BoardInfo>, String> {
     log_debug!("board_queries", "Fetching boards list");
@@ -50,7 +50,7 @@ pub async fn get_boards(state: State<'_, AppState>) -> Result<Vec<BoardInfo>, St
     Ok(boards)
 }
 
-/// Get images available for a specific board from the Armbian REST API
+/// Get images available for a specific board from the active catalog
 #[tauri::command]
 pub async fn get_images_for_board(
     board_slug: String,
@@ -117,7 +117,7 @@ pub async fn get_images_for_board(
     Ok(images)
 }
 
-/// Get list of vendors/manufacturers from the Armbian REST API
+/// Get list of vendors/manufacturers from the active catalog
 #[tauri::command]
 pub async fn get_vendors(state: State<'_, AppState>) -> Result<Vec<ApiVendor>, String> {
     log_debug!("board_queries", "Fetching vendors list");

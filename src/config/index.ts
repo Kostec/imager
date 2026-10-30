@@ -46,7 +46,7 @@ export {
   SETTINGS_VIEW,
   PALETTE,
   COLORS,
-  QR_CODE,
+  FEATURES,
   UI,
   AUTOCONFIG,
   VENDOR,
@@ -81,3 +81,5 @@ export {
 } from './imageFilters';
 export type { OsCategory } from './imageFilters';
 export { qdlInstructionsKey } from './qdlBoards';
+
+export { WUKONG_BOARD } from './wukong';

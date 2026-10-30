@@ -221,7 +221,7 @@ export function displayUrl(url: string): string {
   return url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
 }
 
-/** displayUrl split before its last path segment, e.g. ["paste.armbian.com/", "abc"]. */
+/** displayUrl split before its last path segment, e.g. ["example.com/", "abc"]. */
 export function splitUrlTail(url: string): [string, string] {
   const shown = displayUrl(url);
   const cut = shown.lastIndexOf('/') + 1;

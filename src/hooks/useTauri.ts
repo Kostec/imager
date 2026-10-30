@@ -114,15 +114,6 @@ export async function decompressCustomImage(imagePath: string): Promise<string> 
   return invoke('decompress_custom_image', { imagePath });
 }
 
-export interface UploadResult {
-  url: string;
-  key: string;
-}
-
-export async function uploadLogs(): Promise<UploadResult> {
-  return invoke('upload_logs');
-}
-
 export async function openUrl(url: string): Promise<void> {
   return invoke('open_url', { url });
 }
@@ -142,24 +133,6 @@ export async function logInfo(module: string, message: string): Promise<void> {
 
 export async function logWarn(module: string, message: string): Promise<void> {
   return invoke('log_warn_from_frontend', { module, message });
-}
-
-export interface GitHubRelease {
-  tag_name: string;
-  name: string;
-  body: string | null;
-  html_url: string;
-  published_at: string;
-}
-
-/** Fetch GitHub release info for a version tag (e.g. "1.0.0" or "v1.0.0") */
-export async function getGithubRelease(version: string): Promise<GitHubRelease> {
-  return invoke('get_github_release', { version });
-}
-
-/** Whether the app runs from /Applications (always true off macOS); gates an update warning */
-export async function isAppInApplications(): Promise<boolean> {
-  return invoke('is_app_in_applications');
 }
 
 /** Get the real system platform and architecture */

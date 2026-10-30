@@ -280,6 +280,16 @@ mod tests {
     }
 
     #[test]
+    fn iso_and_raw_images_are_written_as_they_are() {
+        assert!(!needs_decompression(Path::new("wukong.iso")));
+        assert!(!needs_decompression(Path::new("wukong.ISO")));
+        assert!(!needs_decompression(Path::new("wukong.img")));
+        for name in ["w.img.xz", "w.img.gz", "w.img.zst", "w.img.bz2"] {
+            assert!(needs_decompression(Path::new(name)), "{name}");
+        }
+    }
+
+    #[test]
     fn missing_input_is_tagged() {
         let tmp = tempfile::tempdir().unwrap();
         let out = tmp.path().join("out.img");

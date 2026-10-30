@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Armbian Imager",
+  "productName": "Wukong Imager",
   "version": "2.0.0",
-  "identifier": "com.armbian.imager",
+  "identifier": "io.github.kostec.wukongimager",
   "build": {
     "beforeBuildCommand": "npm run build",
     "beforeDevCommand": "npm run dev",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Armbian Imager",
+        "title": "Wukong Imager",
         "width": 1100,
         "height": 700,
         "resizable": true,
@@ -36,11 +36,11 @@
   "bundle": {
     "active": true,
     "targets": "all",
-    "createUpdaterArtifacts": true,
+    "createUpdaterArtifacts": false,
     "license": "GPL-2.0-or-later",
     "copyright": "Copyright (c) 2025-2026 Daniele Briguglio and contributors",
-    "homepage": "https://github.com/armbian/imager",
-    "publisher": "Armbian",
+    "homepage": "https://github.com/Kostec/imager",
+    "publisher": "Kostec",
     "resources": {
       "../LICENSE": "LICENSE"
     },
@@ -53,8 +53,8 @@
       "icons/icon.png"
     ],
     "category": "Utility",
-    "shortDescription": "Flash Armbian OS images",
-    "longDescription": "Armbian Imager is a utility for flashing Armbian OS images to SD cards and USB drives for single board computers.",
+    "shortDescription": "Flash OS images for the Wukong Pi Zero",
+    "longDescription": "Wukong Imager writes OS images to SD cards for the Wukong Pi Zero and verifies the result. A fork of Armbian Imager.",
     "macOS": {
       "entitlements": "./entitlements.plist",
       "signingIdentity": null,
@@ -87,20 +87,20 @@
       "appimage": {
         "bundleMediaFramework": false,
         "files": {
-          "/usr/share/doc/armbian-imager/copyright": "packaging/copyright",
-          "/usr/share/doc/armbian-imager/LICENSE": "../LICENSE"
+          "/usr/share/doc/wukong-imager/copyright": "packaging/copyright",
+          "/usr/share/doc/wukong-imager/LICENSE": "../LICENSE"
         }
       },
       "deb": {
         "section": "utils",
         "files": {
-          "/usr/share/doc/armbian-imager/copyright": "packaging/copyright"
+          "/usr/share/doc/wukong-imager/copyright": "packaging/copyright"
         }
       },
       "rpm": {
         "files": {
-          "/usr/share/doc/armbian-imager/copyright": "packaging/copyright",
-          "/usr/share/licenses/armbian-imager/LICENSE": "../LICENSE"
+          "/usr/share/doc/wukong-imager/copyright": "packaging/copyright",
+          "/usr/share/licenses/wukong-imager/LICENSE": "../LICENSE"
         }
       }
     }
@@ -108,15 +108,6 @@
   "plugins": {
     "shell": {
       "open": true
-    },
-    "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEYxQzgxMEQ3QUI1RjRDQ0UKUldUT1RGK3IxeERJOGJnSzNrVG1EZ2JVcVRGYllCdFBQNDFVa0l0WjF5NFNndk9YVzhlMDIrS04K",
-      "endpoints": [
-        "https://github.com/armbian/imager/releases/latest/download/latest.json"
-      ],
-      "windows": {
-        "installMode": "passive"
-      }
     }
   }
 }

@@ -96,28 +96,6 @@ export async function setReducedMotion(mode: string): Promise<void> {
   }
 }
 
-/** Get the MOTD visibility preference */
-export async function getShowMotd(): Promise<boolean> {
-  try {
-    const store = await getStore();
-    const value = await store.get<boolean>(SETTINGS.KEYS.SHOW_MOTD);
-    return value ?? SETTINGS.DEFAULTS.SHOW_MOTD;
-  } catch (error) {
-    throw new Error(`Failed to get MOTD preference: ${error}`);
-  }
-}
-
-/** Set the MOTD visibility preference */
-export async function setShowMotd(show: boolean): Promise<void> {
-  try {
-    const store = await getStore();
-    await store.set(SETTINGS.KEYS.SHOW_MOTD, show);
-    await store.save();
-  } catch (error) {
-    throw new Error(`Failed to set MOTD preference: ${error}`);
-  }
-}
-
 /** Get the welcome screen visibility preference */
 export async function getShowWelcome(): Promise<boolean> {
   try {
@@ -137,28 +115,6 @@ export async function setShowWelcome(show: boolean): Promise<void> {
     await store.save();
   } catch (error) {
     throw new Error(`Failed to set welcome screen preference: ${error}`);
-  }
-}
-
-/** Get the updater modal visibility preference */
-export async function getShowUpdaterModal(): Promise<boolean> {
-  try {
-    const store = await getStore();
-    const value = await store.get<boolean>(SETTINGS.KEYS.SHOW_UPDATER_MODAL);
-    return value ?? SETTINGS.DEFAULTS.SHOW_UPDATER_MODAL;
-  } catch (error) {
-    throw new Error(`Failed to get updater modal preference: ${error}`);
-  }
-}
-
-/** Set the updater modal visibility preference */
-export async function setShowUpdaterModal(show: boolean): Promise<void> {
-  try {
-    const store = await getStore();
-    await store.set(SETTINGS.KEYS.SHOW_UPDATER_MODAL, show);
-    await store.save();
-  } catch (error) {
-    throw new Error(`Failed to set updater modal preference: ${error}`);
   }
 }
 

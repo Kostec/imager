@@ -14,7 +14,7 @@ export function useSkeletonLoading(
   const [showSkeleton, setShowSkeleton] = useState(false);
 
   useEffect(() => {
-    let skeletonTimeout: NodeJS.Timeout;
+    let skeletonTimeout: ReturnType<typeof setTimeout>;
 
     if (loading) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- Show skeleton during loading

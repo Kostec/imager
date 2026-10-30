@@ -1,13 +1,13 @@
 [package]
-name = "armbian-imager"
+name = "wukong-imager"
 version = "2.0.0"
-description = "Armbian Imager - Flash Armbian OS images to SD cards and USB drives"
+description = "Wukong Imager - Flash OS images to SD cards for the Wukong Pi Zero"
 authors = ["Armbian", "Daniele Briguglio <superkali@armbian.com>"]
 edition = "2021"
 rust-version = "1.85.0"
 license = "GPL-2.0-or-later"
-homepage = "https://github.com/armbian/imager"
-repository = "https://github.com/armbian/imager"
+homepage = "https://github.com/Kostec/imager"
+repository = "https://github.com/Kostec/imager"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
@@ -20,8 +20,6 @@ tauri = { version = "2", features = ["protocol-asset", "macos-private-api"] }
 # https://github.com/tauri-apps/wry/pull/1843 (tauri 2.11.2, wry 0.55.1, last checked 2026-10-06)
 tauri-plugin-shell = "2"
 tauri-plugin-dialog = "2"
-tauri-plugin-updater = "2"
-tauri-plugin-process = "2"
 tauri-plugin-store = "2"
 tauri-plugin-mcp-bridge = "0.13"
 serde = { version = "1", features = ["derive"] }

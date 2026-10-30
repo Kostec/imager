@@ -1,18 +1,15 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright (c) 2026 Daniele Briguglio, superkali@armbian.com
 
-import { useEffect, useId, useRef, useState, type CSSProperties } from 'react';
-import { RotateCcw, Loader2, Upload } from 'lucide-react';
+import { useEffect, useId, useRef, type CSSProperties } from 'react';
+import { RotateCcw, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { UI } from '../../config';
 import { HERO_ART, PANEL_ERROR_HERO } from '../../config/heroArt';
 import { useEntrancePlayback } from '../../hooks/useEntrancePlayback';
 import { logWarn } from '../../hooks/useTauri';
-import { useLogUpload } from '../../hooks/useLogUpload';
-import { useToasts } from '../../hooks/useToasts';
 import { classifyLoadError, qdlErrorKey, type LoadErrorKind } from '../../utils/errorUtils';
 import { HeroArt } from '../settings/HeroArt';
-import { LogShareModal } from './LogShareModal';
 
 type PanelErrorSource = 'catalog' | 'devices' | 'edl';
 
@@ -45,10 +42,7 @@ interface PanelErrorProps {
 /** Load failure of a selection panel; the scene lights up while a retry runs. */
 export function PanelError({ error, onRetry, retrying, source = 'catalog' }: PanelErrorProps) {
   const { t } = useTranslation();
-  const { showError } = useToasts();
-  const { upload, uploading, url: pasteUrl, qr, error: uploadError, open } = useLogUpload({ withQr: true });
   const { ref: artRef, playing } = useEntrancePlayback(UI.SETTINGS_HERO.PLAY_THRESHOLD);
-  const [shareOpen, setShareOpen] = useState(false);
   const loggedRef = useRef(false);
   const pointerRef = useRef(false);
   const titleId = useId();
@@ -60,10 +54,6 @@ export function PanelError({ error, onRetry, retrying, source = 'catalog' }: Pan
   const qdlKey = source === 'edl' ? qdlErrorKey(error) : undefined;
 
   useEffect(() => {
-    if (uploadError) showError(uploadError);
-  }, [uploadError, showError]);
-
-  useEffect(() => {
     if (retrying) {
       loggedRef.current = false;
       return;
@@ -73,10 +63,6 @@ export function PanelError({ error, onRetry, retrying, source = 'catalog' }: Pan
     const raw = RAW_UNLOGGED.includes(source) ? `: ${error}` : '';
     logWarn('panel-error', `Panel load failed (${kind})${raw}`);
   }, [retrying, source, kind, error]);
-
-  async function handleUpload() {
-    if (await upload()) setShareOpen(true);
-  }
 
   return (
     <section
@@ -114,24 +100,8 @@ export function PanelError({ error, onRetry, retrying, source = 'catalog' }: Pan
             )}
             {retrying ? t('errorDisplay.retrying') : t('errorDisplay.retry')}
           </button>
-          <button
-            type="button"
-            className="btn btn-secondary btn-pill"
-            onClick={handleUpload}
-            disabled={uploading}
-            aria-busy={uploading}
-          >
-            {uploading ? (
-              <Loader2 size={UI.ICON_SIZE.BUTTON} className="spinning" />
-            ) : (
-              <Upload size={UI.ICON_SIZE.BUTTON} />
-            )}
-            {uploading ? t('errorDisplay.uploadingLogs') : t('errorDisplay.uploadLogsForSupport')}
-          </button>
         </div>
       </div>
-
-      <LogShareModal isOpen={shareOpen} onClose={() => setShareOpen(false)} url={pasteUrl} qr={qr} onOpen={open} />
     </section>
   );
 }

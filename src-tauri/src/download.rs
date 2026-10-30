@@ -510,35 +510,35 @@ mod tests {
     #[test]
     fn filename_is_the_last_url_segment() {
         assert_eq!(
-            extract_filename("https://dl.armbian.com/a/b/x.img.xz?mirror=1"),
+            extract_filename("https://images.example.com/a/b/x.img.xz?mirror=1"),
             Ok("x.img.xz")
         );
         assert_eq!(
-            extract_filename("https://dl.armbian.com/a/x%5C..img.xz"),
+            extract_filename("https://images.example.com/a/x%5C..img.xz"),
             Ok("x%5C..img.xz")
         );
         assert_eq!(
-            extract_filename("https://dl.armbian.com/a/x.img.xz#..\\y"),
+            extract_filename("https://images.example.com/a/x.img.xz#..\\y"),
             Ok("x.img.xz")
         );
         assert_eq!(
-            extract_filename("https://dl.armbian.com/a/x.img.xz#frag?q=1"),
+            extract_filename("https://images.example.com/a/x.img.xz#frag?q=1"),
             Ok("x.img.xz")
         );
-        assert!(extract_filename("https://dl.armbian.com/a/").is_err());
+        assert!(extract_filename("https://images.example.com/a/").is_err());
     }
 
     #[test]
     fn filename_with_windows_separators_is_refused() {
         assert!(refused(extract_filename(
-            "https://dl.armbian.com/a/..\\..\\x.img.xz"
+            "https://images.example.com/a/..\\..\\x.img.xz"
         )));
         assert!(refused(extract_filename(
-            "https://dl.armbian.com/a/C:\\x.img.xz"
+            "https://images.example.com/a/C:\\x.img.xz"
         )));
-        assert!(refused(extract_filename("https://dl.armbian.com/a/..")));
+        assert!(refused(extract_filename("https://images.example.com/a/..")));
         assert!(refused(extract_filename(
-            "https://dl.armbian.com/a/x\0.img"
+            "https://images.example.com/a/x\0.img"
         )));
     }
 

@@ -33,53 +33,25 @@ export const POLLING = {
 export type DeviceType = 'system' | 'sd' | 'usb' | 'sata' | 'sas' | 'nvme' | 'hdd';
 
 const GITHUB = 'https://github.com';
-const GITHUB_REPO = `${GITHUB}/armbian/imager`;
+const GITHUB_REPO = `${GITHUB}/Kostec/imager`;
 
 export const LINKS = {
   GITHUB,
   GITHUB_REPO,
   ISSUES: `${GITHUB_REPO}/issues`,
-  DOCS: 'https://docs.armbian.com',
-  FORUM: 'https://forum.armbian.com',
-  MOTD: 'https://raw.githubusercontent.com/armbian/os/main/motd.json',
-  WEBSITE: 'https://www.armbian.com',
-  DONATE: 'https://www.armbian.com/donate',
-  /** Shown in the log upload description; the upload endpoint itself lives in the backend config */
-  PASTE_HOST: 'paste.armbian.com',
+  /** The project this one is forked from */
+  UPSTREAM: `${GITHUB}/armbian/imager`,
+  LICENSE: `${GITHUB_REPO}/blob/wukong/LICENSE`,
 } as const;
 
 /** Timing constants in milliseconds */
 export const TIMING = {
-  MOTD_ROTATION: 30000,
   COPIED_NOTIFICATION: 2000,
   TOAST_DURATION: 3000,
   COVERFLOW_ADVANCE: 3600,
   /** Minimum time a Retry stays busy, long enough for the lit scene and a fast failure to read as a new attempt */
   RETRY_MIN_BUSY: 1200,
 } as const;
-
-const UPDATER_TITLE_KEY = {
-  available: 'update.title',
-  downloading: 'update.railDownloading',
-  ready: 'update.ready',
-  installing: 'update.ready',
-  error: 'update.error',
-} as const;
-
-export const UPDATER = {
-  /** The plugin reports one event per network chunk; state follows at most this often */
-  PROGRESS_FLUSH_MS: 100,
-  ERROR_KEY: {
-    download: 'update.errorMessage',
-    install: 'update.installErrorMessage',
-    relaunch: 'update.relaunchErrorMessage',
-  },
-  NOT_IN_APPLICATIONS_KEY: 'update.errorNotInApplications',
-  TITLE_KEY: UPDATER_TITLE_KEY,
-  ANNOUNCE_KEY: { ...UPDATER_TITLE_KEY, installing: 'update.restarting' },
-} as const;
-
-export type UpdateFailure = keyof typeof UPDATER.ERROR_KEY;
 
 export const ZERO_BYTES_LABEL = '0 B';
 export const BYTES_PER_KB = 1024;
@@ -102,7 +74,6 @@ export const CACHE = {
 
 /** Custom DOM events for inter-component communication */
 export const EVENTS = {
-  MOTD_CHANGED: 'armbian-motd-changed',
   SETTINGS_CHANGED: 'armbian-settings-changed',
   CACHE_IMAGE_REUSE: 'armbian-cache-image-reuse',
   PROFILES_CHANGED: 'armbian-autoconfig-profiles-changed',
@@ -119,6 +90,12 @@ export const SETTINGS_VIEW = {
   ABOUT: 'about',
 } as const;
 
+/** Parts of the interface that are switched off in this build */
+export const FEATURES: { AUTOCONFIG: boolean } = {
+  /** First-boot settings and profiles: hidden until they work on Wukong images */
+  AUTOCONFIG: false,
+};
+
 /** Storage key prefixes for sessionStorage/localStorage */
 export const STORAGE_KEYS = {
   /** Prefix, appended with the image URL */
@@ -131,9 +108,7 @@ export const SETTINGS = {
   KEYS: {
     THEME: 'theme',
     LANGUAGE: 'language',
-    SHOW_MOTD: 'show_motd',
     SHOW_WELCOME: 'show_welcome',
-    SHOW_UPDATER_MODAL: 'show_updater_modal',
     DEVELOPER_MODE: 'developer_mode',
     SKIP_VERIFY: 'skip_verify',
     FORCE_OFFLINE: 'force_offline',
@@ -147,9 +122,7 @@ export const SETTINGS = {
   DEFAULTS: {
     THEME: 'auto',
     LANGUAGE: 'en',
-    SHOW_MOTD: true,
     SHOW_WELCOME: true,
-    SHOW_UPDATER_MODAL: true,
     DEVELOPER_MODE: false,
     SKIP_VERIFY: false,
     FORCE_OFFLINE: false,
@@ -217,16 +190,9 @@ export const PALETTE = {
 /** UI color constants */
 export const COLORS = {
   DEFAULT_ICON: PALETTE.SLATE,
-  QR_DARK: '#000000',
-  QR_LIGHT: '#ffffff',
   ON_TILE: '#ffffff',
   TERMINAL_FG: '#FFF',
   TERMINAL_BG: '#000',
-} as const;
-
-export const QR_CODE = {
-  WIDTH: 120,
-    MARGIN: 1,
 } as const;
 
 /** UI dimension constants */

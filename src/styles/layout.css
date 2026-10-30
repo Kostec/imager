@@ -95,37 +95,16 @@
   opacity: 0.9;
 }
 
-/* Theme-aware wordmark: black in light, white in dark, auto follows system. */
-.logo-main--dark {
-  display: none;
+.logo-name {
+  margin-left: 10px;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  white-space: nowrap;
 }
 
-@media (prefers-color-scheme: dark) {
-  .logo-main--light {
-    display: none;
-  }
-  .logo-main--dark {
-    display: block;
-  }
-}
-
-.theme-light .logo-main--light {
-  display: block;
-}
-
-.theme-light .logo-main--dark {
-  display: none;
-}
-
-.theme-dark .logo-main--light {
-  display: none;
-}
-
-.theme-dark .logo-main--dark {
-  display: block;
-}
-
-/* BOARD IMAGE FALLBACK (Armbian wordmark watermark) */
+/* BOARD IMAGE FALLBACK (app icon watermark) */
 /* Shown when a board/image has no photo: fills the slot and centers the logo. */
 .board-image-fallback {
   display: grid;
@@ -709,6 +688,23 @@
   border: 1px solid var(--island-border);
   border-radius: 22px;
   box-shadow: var(--island-shadow), var(--island-highlight);
+}
+
+.split-nav__board {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.split-nav__board svg {
+  flex-shrink: 0;
+  color: var(--text-secondary);
 }
 
 .split-nav__list {
@@ -3343,4 +3339,39 @@
   .split.is-entering .side-step {
     animation: none;
   }
+}
+
+/* Image step: a local file first, catalog images below when there are any. */
+.image-panel__choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.image-panel__icon {
+  color: var(--text-secondary);
+}
+
+.image-panel__title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.image-panel__hint {
+  margin: 0;
+  max-width: 460px;
+  color: var(--text-secondary);
+}
+
+.image-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 8px;
 }

@@ -345,7 +345,7 @@ jobs:
 
       - name: Check release binary has no dev scenarios
         shell: bash
-        run: ./scripts/build/check-release-binary.sh src-tauri/target/release/armbian-imager
+        run: ./scripts/build/check-release-binary.sh src-tauri/target/release/wukong-imager
 
       - name: Check frontend bundle has no dev scenarios
         shell: bash

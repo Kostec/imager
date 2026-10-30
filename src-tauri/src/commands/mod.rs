@@ -15,7 +15,6 @@ pub mod settings;
 pub mod ssh_keys;
 mod state;
 pub mod system;
-pub mod update;
 
 // Re-export state for use in main.rs
 pub use state::AppState;

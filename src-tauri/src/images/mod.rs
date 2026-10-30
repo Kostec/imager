@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright (c) 2025-2026 Daniele Briguglio, superkali@armbian.com
 
-//! Fetching board, image, and vendor data from the Armbian REST API, with
-//! on-disk caching of responses for offline use.
+//! Board, image, and vendor data, served from the active catalog.
 
 mod filters;
 mod models;
@@ -10,18 +9,15 @@ mod models;
 pub use filters::{map_board, map_images};
 pub use models::{ApiBoardSummary, ApiImage, ApiQdl, ApiVendor, BoardInfo, ImageInfo};
 
-use models::ApiResponse;
-
+use crate::catalog::{self, Catalog};
 use crate::config;
 use crate::utils::assets_dir;
 use crate::{log_debug, log_error, log_warn};
 
 use once_cell::sync::Lazy;
 use reqwest::header::{HeaderMap, HeaderValue};
-use std::path::PathBuf;
 
-/// Shared HTTP client for JSON API endpoints (10s timeout, X-Armbian-Client header).
-/// Large image downloads use a separate client with longer timeouts.
+/// HTTP client for the QDL board lookup below (10s timeout, X-Armbian-Client header).
 static API_CLIENT: Lazy<reqwest::Client> = Lazy::new(|| {
     let mut headers = HeaderMap::new();
     headers.insert(
@@ -41,66 +37,6 @@ static API_CLIENT: Lazy<reqwest::Client> = Lazy::new(|| {
         .build()
         .expect("Failed to create API HTTP client")
 });
-
-/// Pagination cap guarding against runaway loops on inconsistent `meta.total`.
-const MAX_PAGES: u32 = 50;
-
-/// Get the path for a named cache file inside the assets directory
-fn get_cache_path(name: &str) -> PathBuf {
-    assets_dir().join(format!("{}.json", name))
-}
-
-/// Save data to a cache file atomically via a uniquely-named temp file + rename.
-fn save_cache(name: &str, data: &str) {
-    let path = get_cache_path(name);
-    let data = data.to_string();
-    tokio::task::spawn_blocking(move || {
-        if let Some(parent) = path.parent() {
-            let _ = std::fs::create_dir_all(parent);
-        }
-        // pid+timestamp tmp name keeps concurrent writers from clobbering.
-        let pid = std::process::id();
-        let nanos = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_nanos())
-            .unwrap_or(0);
-        let tmp_path = path.with_extension(format!("json.{}.{}.tmp", pid, nanos));
-        if let Err(e) = std::fs::write(&tmp_path, &data) {
-            log_warn!("images", "Failed to write cache temp file: {}", e);
-            return;
-        }
-        if let Err(e) = std::fs::rename(&tmp_path, &path) {
-            log_warn!("images", "Failed to rename cache file: {}", e);
-            let _ = std::fs::remove_file(&tmp_path);
-        } else {
-            log_debug!("images", "Saved cache to {}", path.display());
-        }
-    });
-}
-
-/// Load data from a cache file
-async fn load_cache(name: &str) -> Result<String, String> {
-    let path = get_cache_path(name);
-    if !path.exists() {
-        return Err(format!(
-            "No cached {} data available (first launch while offline)",
-            name
-        ));
-    }
-
-    let data = tokio::fs::read_to_string(&path).await.map_err(|e| {
-        log_error!("images", "Failed to read {} cache: {}", name, e);
-        format!("Failed to read cached data: {}", e)
-    })?;
-
-    log_debug!(
-        "images",
-        "Loaded {} data from local cache ({})",
-        name,
-        path.display()
-    );
-    Ok(data)
-}
 
 /// Fetch a single board's QDL block from the API detail endpoint. Returns None
 /// when the board has no QDL metadata or on any network/parse error, so the
@@ -133,108 +69,21 @@ pub fn cleanup_legacy_cache() {
     }
 }
 
-/// Fetch all boards from the Armbian REST API (paginated), caching to disk
-/// on success and falling back to that cache on failure.
+async fn load_catalog() -> Result<Catalog, String> {
+    catalog::load(&catalog::current_source())
+        .await
+        .map_err(|e| {
+            log_error!("images", "Failed to load the catalog: {}", e);
+            e.to_string()
+        })
+}
+
+/// All boards of the active catalog.
 pub async fn fetch_boards() -> Result<Vec<ApiBoardSummary>, String> {
-    log_debug!(
-        "images",
-        "Fetching boards from {}/boards",
-        config::urls::api_base()
-    );
-
-    match fetch_boards_from_api().await {
-        Ok(boards) => {
-            if let Ok(json) = serde_json::to_string(&boards) {
-                save_cache("api-boards", &json);
-            }
-            Ok(boards)
-        }
-        Err(e) => {
-            log_warn!("images", "API fetch failed, trying local cache: {}", e);
-            let data = load_cache("api-boards").await?;
-            serde_json::from_str(&data).map_err(|e| {
-                log_error!("images", "Failed to parse boards cache: {}", e);
-                format!("Failed to parse cached boards: {}", e)
-            })
-        }
-    }
+    Ok(load_catalog().await?.boards)
 }
 
-/// Fetch boards from the remote API, paginating until an empty page or the
-/// `MAX_PAGES` cap (both guard against a bad `meta.total` looping forever).
-async fn fetch_boards_from_api() -> Result<Vec<ApiBoardSummary>, String> {
-    let url_base = format!("{}/boards", config::urls::api_base());
-    let mut all_boards = Vec::new();
-    let mut page: u32 = 1;
-    let limit: u32 = 500;
-
-    while page <= MAX_PAGES {
-        let response: ApiResponse<Vec<ApiBoardSummary>> = API_CLIENT
-            .get(&url_base)
-            .query(&[("limit", limit.to_string()), ("page", page.to_string())])
-            .send()
-            .await
-            .map_err(|e| format!("Failed to fetch boards: {}", e))?
-            .error_for_status()
-            .map_err(|e| format!("Boards API returned error: {}", e))?
-            .json()
-            .await
-            .map_err(|e| format!("Failed to parse boards response: {}", e))?;
-
-        // An empty page ends pagination regardless of meta.total.
-        if response.data.is_empty() {
-            break;
-        }
-
-        let total = response.meta.total.unwrap_or(0);
-        all_boards.extend(response.data);
-
-        // Stop once we've covered the advertised total.
-        if (page * limit) >= total {
-            break;
-        }
-        page += 1;
-    }
-
-    if page > MAX_PAGES {
-        log_warn!(
-            "images",
-            "Boards pagination reached MAX_PAGES cap ({}); stopping early",
-            MAX_PAGES
-        );
-    }
-
-    // Tally support tiers for the diagnostic log line below.
-    let mut platinum = 0u32;
-    let mut standard = 0u32;
-    let mut community = 0u32;
-    let mut eos = 0u32;
-    let mut other = 0u32;
-    for b in &all_boards {
-        match b.support_tier.as_str() {
-            "platinum" => platinum += 1,
-            "standard" => standard += 1,
-            "community" => community += 1,
-            "eos" => eos += 1,
-            _ => other += 1,
-        }
-    }
-
-    log_debug!(
-        "images",
-        "Successfully fetched {} boards from API (platinum: {}, standard: {}, community: {}, eos: {}, other: {})",
-        all_boards.len(),
-        platinum,
-        standard,
-        community,
-        eos,
-        other
-    );
-    Ok(all_boards)
-}
-
-/// Fetch a board's images from the Armbian REST API (optional query filters),
-/// caching to disk on success and falling back to that cache on failure.
+/// A board's images in the active catalog, narrowed by the optional filters.
 pub async fn fetch_images_for_board(
     slug: &str,
     variant: Option<&str>,
@@ -242,124 +91,45 @@ pub async fn fetch_images_for_board(
     branch: Option<&str>,
     promoted: Option<bool>,
 ) -> Result<Vec<ApiImage>, String> {
-    log_debug!("images", "Fetching images for board: {} from API", slug);
-
-    let cache_name = format!("api-images-{}", slug);
-
-    match fetch_images_from_api(slug, variant, distribution, branch, promoted).await {
-        Ok(images) => {
-            if let Ok(json) = serde_json::to_string(&images) {
-                save_cache(&cache_name, &json);
-            }
-            Ok(images)
-        }
-        Err(e) => {
-            log_warn!(
-                "images",
-                "API fetch for board {} failed, trying cache: {}",
-                slug,
-                e
-            );
-            let data = load_cache(&cache_name).await?;
-            serde_json::from_str(&data).map_err(|e| {
-                log_error!("images", "Failed to parse images cache for {}: {}", slug, e);
-                format!("Failed to parse cached images: {}", e)
-            })
-        }
-    }
+    let mut images = load_catalog()
+        .await?
+        .images
+        .remove(slug)
+        .unwrap_or_default();
+    images.retain(|image| {
+        variant.is_none_or(|v| image.variant == v)
+            && distribution.is_none_or(|d| image.distribution == d)
+            && branch.is_none_or(|b| image.kernel_branch == b)
+            && promoted.is_none_or(|p| image.promoted == p)
+    });
+    Ok(images)
 }
 
-/// Fetch images for a board directly from the remote API
-async fn fetch_images_from_api(
-    slug: &str,
-    variant: Option<&str>,
-    distribution: Option<&str>,
-    branch: Option<&str>,
-    promoted: Option<bool>,
-) -> Result<Vec<ApiImage>, String> {
-    let url = format!("{}/boards/{}/images", config::urls::api_base(), slug);
-
-    let mut params: Vec<(&str, String)> = Vec::new();
-    if let Some(v) = variant {
-        params.push(("variant", v.to_string()));
-    }
-    if let Some(d) = distribution {
-        params.push(("distribution", d.to_string()));
-    }
-    if let Some(b) = branch {
-        params.push(("branch", b.to_string()));
-    }
-    if let Some(p) = promoted {
-        params.push(("promoted", p.to_string()));
-    }
-
-    let response: ApiResponse<Vec<ApiImage>> = API_CLIENT
-        .get(&url)
-        .query(&params)
-        .send()
-        .await
-        .map_err(|e| format!("Failed to fetch images for {}: {}", slug, e))?
-        .error_for_status()
-        .map_err(|e| format!("Images API returned error for {}: {}", slug, e))?
-        .json()
-        .await
-        .map_err(|e| format!("Failed to parse images response for {}: {}", slug, e))?;
-
-    log_debug!(
-        "images",
-        "Successfully fetched {} images for board {}",
-        response.data.len(),
-        slug
-    );
-    Ok(response.data)
-}
-
-/// Fetch all vendors from the Armbian REST API, caching to disk on success
-/// and falling back to that cache on failure.
+/// All vendors of the active catalog.
 pub async fn fetch_vendors() -> Result<Vec<ApiVendor>, String> {
-    log_debug!(
-        "images",
-        "Fetching vendors from {}/vendors",
-        config::urls::api_base()
-    );
-
-    match fetch_vendors_from_api().await {
-        Ok(vendors) => {
-            if let Ok(json) = serde_json::to_string(&vendors) {
-                save_cache("api-vendors", &json);
-            }
-            Ok(vendors)
-        }
-        Err(e) => {
-            log_warn!("images", "Vendors API fetch failed, trying cache: {}", e);
-            let data = load_cache("api-vendors").await?;
-            serde_json::from_str(&data).map_err(|e| {
-                log_error!("images", "Failed to parse vendors cache: {}", e);
-                format!("Failed to parse cached vendors: {}", e)
-            })
-        }
-    }
+    Ok(load_catalog().await?.vendors)
 }
 
-/// Fetch vendors directly from the remote API
-async fn fetch_vendors_from_api() -> Result<Vec<ApiVendor>, String> {
-    let url = format!("{}/vendors", config::urls::api_base());
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    let response: ApiResponse<Vec<ApiVendor>> = API_CLIENT
-        .get(&url)
-        .send()
-        .await
-        .map_err(|e| format!("Failed to fetch vendors: {}", e))?
-        .error_for_status()
-        .map_err(|e| format!("Vendors API returned error: {}", e))?
-        .json()
-        .await
-        .map_err(|e| format!("Failed to parse vendors response: {}", e))?;
+    #[tokio::test]
+    async fn boards_vendors_and_images_come_from_the_built_in_catalog() {
+        // Nothing listens here: a request would fail instead of answering.
+        std::env::set_var("ARMBIAN_API_BASE", "http://127.0.0.1:9");
 
-    log_debug!(
-        "images",
-        "Successfully fetched {} vendors from API",
-        response.data.len()
-    );
-    Ok(response.data)
+        let boards = fetch_boards().await.unwrap();
+        assert_eq!(boards.len(), 1);
+        assert_eq!(boards[0].slug, "wukongpi");
+
+        let vendors = fetch_vendors().await.unwrap();
+        assert_eq!(vendors.len(), 1);
+        assert_eq!(vendors[0].slug, "wukong");
+
+        let images = fetch_images_for_board("wukongpi", None, None, None, None)
+            .await
+            .unwrap();
+        assert!(images.is_empty());
+    }
 }

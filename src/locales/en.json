@@ -2,19 +2,19 @@
   "home": {
     "manufacturer": "Manufacturer",
     "board": "Board",
-    "operatingSystem": "Operating System",
+    "operatingSystem": "Image",
     "storage": "Storage",
     "chooseBrand": "Choose brand",
     "chooseBoard": "Choose board",
-    "chooseOs": "Choose OS",
+    "chooseOs": "Choose image",
     "chooseStorage": "Choose storage",
     "device": "Device",
     "chooseDevice": "Choose device",
-    "welcomeHeading": "Welcome to Armbian Imager",
-    "welcomeIntro": "Pick your board and an image. We'll download it, write it to your SD card or USB drive, and verify it for you.",
+    "welcomeHeading": "Welcome to Wukong Imager",
+    "welcomeIntro": "Pick an image and an SD card. We'll write it and verify it for you.",
     "startNow": "Start now",
-    "useCustomImage": "Use Custom Image",
-    "changeCustomImage": "Change Custom Image",
+    "useCustomImage": "Choose image file",
+    "changeCustomImage": "Change image file",
     "changeCachedImage": "Change Cached Image",
     "imageCount_one": "{{count}} image",
     "imageCount_other": "{{count}} images",
@@ -23,7 +23,9 @@
     "connectionRestored": "Back online",
     "offlineTitle": "You're offline!",
     "offlineHint": "Flash from a local file or an image you downloaded earlier.",
-    "cachedImages": "Cached Images"
+    "cachedImages": "Cached Images",
+    "chooseImageTitle": "Choose an image for your Wukong Pi Zero",
+    "chooseImageHint": ".img, .iso or a compressed image (.xz, .gz, .zst, .bz2). The file stays on your computer, no internet needed."
   },
   "flash": {
     "systemDeviceWarning": "Flashing this can destroy the running OS.",
@@ -90,7 +92,7 @@
     "noManufacturers": "No manufacturers found",
     "noBoards": "No boards found",
     "boardUpdateRequired": "Update required",
-    "boardUpdateRequiredHint": "This board isn't supported by this version of Armbian Imager. Please update.",
+    "boardUpdateRequiredHint": "This board isn't supported by this version of Wukong Imager.",
     "noImages": "No images found",
     "noImagesHint": "No images are published for this board right now.",
     "noDevices": "No devices found",
@@ -141,12 +143,12 @@
     "uploadLogsForSupport": "Upload Logs for Support",
     "viewLogs": "View Logs",
     "scanQrOrShare": "Scan the QR code or share this link:",
-    "serverTitle": "Armbian's servers aren't responding",
+    "serverTitle": "The catalog server isn't responding",
     "serverHint": "This isn't a problem with your connection. Try again in a few minutes.",
-    "networkTitle": "Can't reach Armbian",
+    "networkTitle": "Can't reach the catalog",
     "networkHint": "Check your internet connection, or try again in a few minutes.",
     "otherTitle": "This list didn't load",
-    "otherHint": "Try again. If it keeps happening, upload the logs so the Armbian team can look into it.",
+    "otherHint": "Try again. If it keeps happening, check the log in Settings > About.",
     "devicesTitle": "Couldn't check your storage devices",
     "devicesHint": "Reconnect the card reader or drive, then try again.",
     "edlDevicesTitle": "Couldn't look for devices in EDL mode",
@@ -159,7 +161,7 @@
     "logsStepScan": "Scan the code or copy the link",
     "logsStepIssue": "Open an issue on GitHub",
     "logsStepPaste": "Paste the link and describe the problem",
-    "logsCaption": "Armbian logs",
+    "logsCaption": "Wukong Imager logs",
     "openInBrowser": "Open in browser"
   },
   "error": {
@@ -176,7 +178,7 @@
     "qdlPermissionDenied": "USB access denied. On Linux, install udev rules: echo 'SUBSYSTEM==\"usb\", ATTR{idVendor}==\"05c6\", ATTR{idProduct}==\"9008\", MODE=\"0666\"' | sudo tee /etc/udev/rules.d/51-qdl.rules && echo 'blacklist qcserial' | sudo tee /etc/modprobe.d/blacklist-qcserial.conf && sudo udevadm control --reload-rules",
     "qdlConnectionFailed": "Couldn't connect to the EDL device. Make sure it's in EDL mode and connected via USB.",
     "qdlAutoconfigFailed": "Failed to apply the autoconfig profile to the QDL image.",
-    "autoconfigNotArmbian": "This image has no Armbian first-boot setup, so the profile can't be applied. Flash it without a profile or pick an Armbian image.",
+    "autoconfigNotArmbian": "This image has no first-boot setup, so the profile can't be applied. Flash it without a profile or pick another image.",
     "deviceInvalidPath": "This device can't be written to. Select the device again.",
     "deviceNotFound": "The selected device is no longer connected. Reconnect it and select it again.",
     "deviceChanged": "The selected device changed since you picked it. Select it again before writing.",
@@ -194,10 +196,11 @@
   },
   "custom": {
     "customImage": "Custom Image",
+    "qdlUnsupported": "This archive is for Qualcomm boards and cannot be written to a Wukong Pi Zero.",
     "selectError": "Couldn't open the selected image"
   },
   "armbian": {
-    "description": "This device is running Armbian. Want to pre-select this board and skip the manual steps?",
+    "description": "This device runs a supported system. Want to pre-select this board and skip the manual steps?",
     "cancelHint": "If you cancel, board auto-detection turns off.",
     "disabledToast": "Board auto-detection disabled. Re-enable it in Settings."
   },
@@ -284,7 +287,7 @@
     "allowSystemDevicesDescription": "Risky: you can overwrite the running OS.",
     "armbian": {
       "label": "Auto-detect board",
-      "description": "Identify the board automatically when this device runs Armbian",
+      "description": "Identify the board automatically when this device runs a supported system",
       "mode_disabled": "Disabled",
       "mode_modal": "Interactive",
       "mode_auto": "Silent"
@@ -322,7 +325,7 @@
       "nameRequired": "Enter a profile name",
       "selectPlaceholder": "Select…",
       "urlInvalid": "Enter a valid URL (http or https)",
-      "armbianDefaults": "Armbian defaults",
+      "armbianDefaults": "Image defaults",
       "keys": {
         "checking": "Checking the keys...",
         "found_one": "{{count}} key found. The board fetches it at first start.",
@@ -393,8 +396,8 @@
           "review": "Review"
         },
         "pending": {
-          "network": "Keeps Armbian defaults",
-          "locale": "Armbian defaults"
+          "network": "Keeps the image defaults",
+          "locale": "Image defaults"
         },
         "sum": {
           "keysFrom": "SSH keys from {{forge}}",
@@ -430,8 +433,8 @@
           "now": "Create it now",
           "later": "At first login",
           "more": "Full name and login shell",
-          "shellDefault": "Armbian default",
-          "laterLine": "The first time you log in, over SSH or with a keyboard and monitor, Armbian asks you to create it. The language and time from this profile are not applied then."
+          "shellDefault": "Image default",
+          "laterLine": "Without a user, the image asks you to create one at the first login, over the UART console or SSH."
         },
         "locale": {
           "title": "Language and time",
@@ -440,7 +443,7 @@
           "choose": "I choose",
           "language": "Language",
           "searchTimezone": "Search time zones",
-          "locationLine": "Armbian sets the language and time zone from where the board connects to the internet."
+          "locationLine": "The image keeps its own language and time zone."
         },
         "access": {
           "title": "How do you get in?",
@@ -458,7 +461,7 @@
           "sub": "Check it once. Then it is selected on the summary.",
           "subSettings": "Check it once. Then it shows in your profile list.",
         "titleEmpty": "Nothing set in {{name}} yet",
-        "subEmpty": "Every area keeps Armbian's defaults, so there is nothing to write. Edit one to create it."
+        "subEmpty": "Every area keeps the image defaults, so there is nothing to write. Edit one to create it."
         }
       },
       "editor": {
@@ -494,7 +497,7 @@
         "netFixed": "Fixed, {{ip}}",
         "netAuto": "Automatic address",
         "whoLogsIn": "Who logs in",
-        "laterHint": "Armbian asks at first login",
+        "laterHint": "The image asks at first login",
         "userOk": "Lowercase, starts with a letter",
         "userCreatedAs": "Created as {{name}}",
         "userInvalid": "Use lowercase letters, digits, - and _",
@@ -509,7 +512,7 @@
         "rootSet": "Root password set",
         "rootNotSet": "Root password not set",
         "rootPlaceholder": "Not set",
-        "rootHint": "If empty, Armbian asks for it at first login",
+        "rootHint": "If empty, the image asks for it at first login",
         "locationHint": "Set from where the board connects",
         "remoteHint": "Applied at first boot",
         "atFirstBoot": "At first boot",
@@ -533,7 +536,7 @@
         "createNeedsFix": "Fix the marked fields to create it",
         "saveNeedsSomething": "Set at least one thing to save",
         "createNeedsSomething": "Set at least one thing to create it",
-        "useDefaults": "Use Armbian defaults",
+        "useDefaults": "Use image defaults",
         "deleteProfile": "Delete profile",
         "deleteProfileDesc": "Removes it from Imager. Cards already written keep their settings.",
         "discard": "Discard",
@@ -638,7 +641,7 @@
       "chipVerify": "Verify",
       "verifyAfter": "Verify after writing",
       "verifyAfterDesc": "Reads the device back and compares it with the image. Takes longer",
-      "detectionUnavailable": "Only when this computer runs Armbian"
+      "detectionUnavailable": "Only on a supported system"
     },
     "downloads": {
       "lead": "Image cache and network",
@@ -655,7 +658,10 @@
       "checking": "Checking…",
       "website": "Website",
       "reportSub": "GitHub issues",
-      "support": "Support Armbian",
+      "support": "Original project",
+      "upstream": "Armbian Imager, the original project",
+      "license": "License",
+      "licenseSub": "GPL-2.0-or-later",
       "logsEyebrow": "Logs",
       "sessionLog": "Session log",
       "sessionLogDesc": "Log of this session, to attach to bug reports",
@@ -663,7 +669,7 @@
       "upload": "Upload",
       "sharedLogs": "Shared logs",
       "sharedLogsDesc": "Upload the log to {{host}} and get a link to share",
-      "credits": "Armbian Imager is free software, licensed under GPL-2.0-or-later. Built by the Armbian community with Tauri {{tauri}}. Flags by Twemoji, CC-BY 4.0."
+      "credits": "Wukong Imager is free software, licensed under GPL-2.0-or-later. A fork of Armbian Imager by Daniele Briguglio and the Armbian community, built with Tauri {{tauri}}. Flags by Twemoji, CC-BY 4.0."
     },
     "profiles": {
       "lead": "Settings for the first boot, applied only when you pick a profile",
@@ -686,7 +692,7 @@
     "railDownloading": "Downloading update",
     "restartBlocked": "You can restart once flashing finishes.",
     "retry": "Retry",
-    "appVersionAvailable": "Armbian Imager {{version}} is available",
+    "appVersionAvailable": "Wukong Imager {{version}} is available",
     "versionReady": "{{version}} is ready",
     "downloadingVersion": "Downloading {{version}}",
     "transferProgress": "{{done}} of {{total}}",

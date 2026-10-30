@@ -2,35 +2,26 @@
 // Copyright (c) 2025-2026 Daniele Briguglio, superkali@armbian.com
 
 import { useState, useEffect, type ReactNode, type ComponentType } from 'react';
-import { Factory, Cpu, Database, HardDrive, Usb, FolderOpen, Archive, Check, ArrowRight, Lock, WifiOff } from 'lucide-react';
+import { Cpu, Database, HardDrive, Usb, FolderOpen, Check, ArrowRight, Lock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getCachedBoardImage } from '../../hooks/useTauri';
-import { IMAGE_VARIANT } from '../../config';
-import { isDetectedBoard, formatImageIdentity, formatKernelLabel } from '../../utils';
-import type { BoardInfo, ImageInfo, BlockDevice, Manufacturer } from '../../types';
+import { FEATURES, IMAGE_VARIANT } from '../../config';
+import { formatImageIdentity, formatKernelLabel } from '../../utils';
+import type { BoardInfo, ImageInfo, BlockDevice } from '../../types';
 import { deriveFlashMethod, isEdlImage } from '../../types';
-import { MarqueeText, MotdTip, BoardImage, UpdateEntry } from '../shared';
-import { ManufacturerPanel } from './ManufacturerPanel';
-import { BoardPanel } from './BoardPanel';
-import { OsPanel } from './OsPanel';
+import { MarqueeText, BoardImage } from '../shared';
+import { ImagePanel } from './ImagePanel';
 import { DevicePanel } from './DevicePanel';
 
 interface HomePageProps {
-  selectedManufacturer: Manufacturer | null;
-  selectedBoard: BoardInfo | null;
+  selectedBoard: BoardInfo;
   selectedImage: ImageInfo | null;
   selectedDevice: BlockDevice | null;
-  onChooseManufacturer: () => void;
-  onChooseBoard: () => void;
   onChooseImage: () => void;
   onChooseDevice: () => void;
   onChooseCustomImage: () => void;
   onOpenCacheManager: () => void;
-  /** Select a manufacturer directly from the inline browser. */
-  onSelectManufacturer: (manufacturer: Manufacturer) => void;
-  /** Select a board directly from the inline browser. */
-  onSelectBoard: (board: BoardInfo) => void;
-  /** Select an OS image directly from the inline browser. */
+  /** Select a catalog image directly from the inline browser. */
   onSelectImage: (image: ImageInfo) => void;
   /** Pick a storage device (populates the steps, shows the confirm summary). */
   onSelectDevice: (device: BlockDevice) => void;
@@ -38,11 +29,6 @@ interface HomePageProps {
   onConfirmDevice: () => void;
   /** Cancel the inline storage summary (back to the device list). */
   onClearDevice: () => void;
-  /** Opens Settings > About, where the update is detailed */
-  onOpenUpdate: () => void;
-  isOnline?: boolean;
-  /** One-shot entrance animation flag while leaving the welcome screen. */
-  entering?: boolean;
 }
 
 /** Visual/interaction state of a step. */
@@ -96,7 +82,7 @@ function SideStep({ step }: { step: Step }) {
   );
 }
 
-/** Branded OS identity string (e.g. "Armbian 26.5.1 GNOME"); shared with the flash header. */
+/** OS identity string (e.g. the image file name); shared with the flash header. */
 function osLabelText(image: ImageInfo, t: (key: string) => string): string {
   return formatImageIdentity(image, t).title;
 }
@@ -121,24 +107,18 @@ function deviceStepMeta(
 
 /** Step sidebar + focus panel that highlights the active step and previews the board. */
 function SplitLayout({
+  boardName,
   steps,
   boardImage,
   footer,
   fullBleed = false,
-  entering = false,
-  showMotd = true,
-  onOpenUpdate,
 }: {
+  boardName: string;
   steps: Step[];
   boardImage: string | null;
   footer?: ReactNode;
   /** Collapse the sidebar and expand the panel full-width (e.g. confirm view). */
   fullBleed?: boolean;
-  /** One-shot entrance animation flag while leaving the welcome screen. */
-  entering?: boolean;
-  /** Hide the rotating MOTD tip (e.g. while offline, where it's irrelevant). */
-  showMotd?: boolean;
-  onOpenUpdate: () => void;
 }) {
   // The active step drives the focus panel; fall back to the last step when done.
   const active = steps.find((s) => s.state === 'active') ?? steps[steps.length - 1];
@@ -147,18 +127,19 @@ function SplitLayout({
 
   return (
     <div className="home-page home-split">
-      <div className={`split${fullBleed ? ' is-full' : ''}${entering ? ' is-entering' : ''}`}>
+      <div className={`split${fullBleed ? ' is-full' : ''}`}>
         <aside className="split-nav">
+          <div className="split-nav__board">
+            <Cpu size={18} aria-hidden="true" />
+            <span>{boardName}</span>
+          </div>
           <nav className="split-nav__list">
             {steps.map((step) => (
               <SideStep key={step.key} step={step} />
             ))}
           </nav>
-          {/* Custom-image link + rotating tip, pinned to the bottom together */}
           <div className="split-nav__bottom">
             {footer && <div className="split-nav__foot">{footer}</div>}
-            {showMotd && <MotdTip />}
-            <UpdateEntry onOpenDetails={onOpenUpdate} />
           </div>
         </aside>
 
@@ -208,44 +189,28 @@ function SplitLayout({
   );
 }
 
-/** Main selection page: step sidebar + focus panel, with offline/custom/detected variants. */
+/** Main selection page: the fixed board, then the image and storage steps. */
 export function HomePage({
-  selectedManufacturer,
   selectedBoard,
   selectedImage,
   selectedDevice,
-  onChooseManufacturer,
-  onChooseBoard,
   onChooseImage,
   onChooseDevice,
   onChooseCustomImage,
   onOpenCacheManager,
-  onSelectManufacturer,
-  onSelectBoard,
   onSelectImage,
   onSelectDevice,
   onConfirmDevice,
   onClearDevice,
-  onOpenUpdate,
-  isOnline = true,
-  entering = false,
 }: HomePageProps) {
   const { t } = useTranslation();
-  const isCustomImage = selectedImage?.is_custom;
-  const hasDetectedBoard = isDetectedBoard(selectedBoard);
-  const isGenericCustom = isCustomImage && !hasDetectedBoard;
-  const showOfflineLayout = !isOnline && !selectedManufacturer;
+  const isCached = selectedImage?.image_variant === IMAGE_VARIANT.CACHED;
 
-  // Preview the selected board's photo (real API slug only), with fallback.
-  const previewSlug = hasDetectedBoard ? selectedBoard?.slug ?? null : null;
+  // A catalog may carry a board photo; without one the panels show the neutral icon.
+  const previewSlug = selectedBoard.slug;
   const [boardImage, setBoardImage] = useState<string | null>(null);
   useEffect(() => {
     let alive = true;
-    if (!previewSlug) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- clear preview when no real board slug
-      setBoardImage(null);
-      return;
-    }
     getCachedBoardImage(previewSlug)
       .then((uri) => alive && setBoardImage(uri))
       .catch(() => alive && setBoardImage(null));
@@ -260,10 +225,9 @@ export function HomePage({
   const deviceMeta = selectedDevice ? selectedDevice.size_formatted : null;
   const dStep = deviceStepMeta(selectedImage, t);
 
-  // Upstream selections shown in the inline storage confirm summary.
+  // Selections shown in the inline storage confirm summary.
   const deviceSummary = [
-    selectedManufacturer && { label: t('home.manufacturer'), value: selectedManufacturer.name },
-    selectedBoard && { label: t('home.board'), value: selectedBoard.name },
+    { label: t('home.board'), value: selectedBoard.name },
     selectedImage && {
       label: t('home.operatingSystem'),
       value: osLabelText(selectedImage, t),
@@ -275,212 +239,41 @@ export function HomePage({
   const renderDevicePanel = () => (
     <DevicePanel
       flashMethod={selectedImage ? deriveFlashMethod(selectedImage) : undefined}
-      edlEntry={selectedBoard?.qdl?.edl_entry ?? null}
       summary={deviceSummary}
       boardImage={boardImage}
-      boardSlug={selectedBoard && isDetectedBoard(selectedBoard) ? selectedBoard.slug : null}
-      boardName={selectedBoard && isDetectedBoard(selectedBoard) ? selectedBoard.name : null}
+      boardSlug={selectedBoard.slug}
+      boardName={selectedBoard.name}
       selectedDevice={selectedDevice}
       onSelect={onSelectDevice}
       onConfirm={onConfirmDevice}
       onCancel={onClearDevice}
-      supportsAutoconfig={selectedImage?.supports_autoconfig ?? !isGenericCustom}
+      supportsAutoconfig={FEATURES.AUTOCONFIG && (selectedImage?.supports_autoconfig ?? false)}
     />
   );
 
-  // Sidebar footer: the optional custom/change-image link (settings now lives in the header).
-  const foot = (link?: ReactNode) => (link ? <div className="split-nav__actions">{link}</div> : null);
-
-  // Offline entry point: pick a local source (no split, focused choice).
-  if (showOfflineLayout) {
-    return (
-      <div className="home-page">
-        {/* Two-column like the flash stage: animated hero left, choices right. */}
-        <div className="offline">
-          {/* Big animated glyph: ripple rings + warm glow + gentle float. */}
-          <div className="offline__hero" aria-hidden="true">
-            <span className="offline__ring" />
-            <span className="offline__ring" />
-            <WifiOff className="offline__glyph" size={72} strokeWidth={1.5} />
-          </div>
-
-          <div className="offline__main">
-            <h2 className="offline__title">{t('home.offlineTitle')}</h2>
-            <p className="offline__hint">{t('home.offlineHint')}</p>
-
-            {/* Two quiet rows on one translucent surface, hairline between. */}
-            <div className="offline__actions">
-              <button type="button" className="offline__row" onClick={onChooseCustomImage}>
-                <span className="offline__chip"><FolderOpen size={18} /></span>
-                <span className="offline__label">{t('home.useCustomImage')}</span>
-                <ArrowRight className="offline__arrow" size={16} />
-              </button>
-              <button type="button" className="offline__row" onClick={onOpenCacheManager}>
-                <span className="offline__chip"><Archive size={18} /></span>
-                <span className="offline__label">{t('home.cachedImages')}</span>
-                <ArrowRight className="offline__arrow" size={16} />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Generic custom image (no detected board): OS (fixed) + Storage.
-  if (isGenericCustom && selectedImage) {
-    const steps: Step[] = [
-      {
-        key: 'image',
-        index: 1,
-        icon: Database,
-        label: t('home.operatingSystem'),
-        cta: t('home.operatingSystem'),
-        value: osTitle(selectedImage, t),
-        meta: osMeta(selectedImage, t),
-        state: 'readonly',
-      },
-      {
-        key: 'device',
-        index: 2,
-        icon: dStep.icon,
-        label: dStep.label,
-        cta: dStep.cta,
-        value: deviceValue,
-        meta: deviceMeta,
-        state: selectedDevice ? 'done' : 'active',
-        primary: !selectedDevice,
-        onClick: onChooseDevice,
-        panel: renderDevicePanel(),
-      },
-    ];
-    return (
-      <SplitLayout
-        steps={steps}
-        boardImage={boardImage}
-        fullBleed={!!selectedDevice}
-        entering={entering}
-        showMotd={isOnline}
-        onOpenUpdate={onOpenUpdate}
-        footer={foot(
-          <button type="button" className="split-link" onClick={onChooseCustomImage}>
-            <FolderOpen size={15} />
-            {t('home.changeCustomImage')}
-          </button>
-        )}
-      />
-    );
-  }
-
-  // Custom/cached Armbian image with detected board: read-only rows + change image.
-  if (isCustomImage && hasDetectedBoard && selectedImage && selectedBoard) {
-    const isCached = selectedImage.image_variant === IMAGE_VARIANT.CACHED;
-    const steps: Step[] = [
-      {
-        key: 'manufacturer',
-        index: 1,
-        icon: Factory,
-        label: t('home.manufacturer'),
-        cta: t('home.manufacturer'),
-        value: <MarqueeText text={selectedManufacturer?.name || ''} className="val-text" />,
-        state: 'readonly',
-      },
-      {
-        key: 'board',
-        index: 2,
-        icon: Cpu,
-        label: t('home.board'),
-        cta: t('home.board'),
-        value: <MarqueeText text={selectedBoard.name} className="val-text" />,
-        meta: t('home.imageCount', { count: selectedBoard.image_count }),
-        state: 'readonly',
-      },
-      {
-        key: 'image',
-        index: 3,
-        icon: Database,
-        label: t('home.operatingSystem'),
-        cta: t('home.operatingSystem'),
-        value: osTitle(selectedImage, t),
-        meta: osMeta(selectedImage, t),
-        state: 'readonly',
-      },
-      {
-        key: 'device',
-        index: 4,
-        icon: dStep.icon,
-        label: dStep.label,
-        cta: dStep.cta,
-        value: deviceValue,
-        meta: deviceMeta,
-        state: selectedDevice ? 'done' : 'active',
-        primary: !selectedDevice,
-        onClick: onChooseDevice,
-        panel: renderDevicePanel(),
-      },
-    ];
-    return (
-      <SplitLayout
-        steps={steps}
-        boardImage={boardImage}
-        fullBleed={!!selectedDevice}
-        entering={entering}
-        showMotd={isOnline}
-        onOpenUpdate={onOpenUpdate}
-        footer={foot(
-          <button
-            type="button"
-            className="split-link"
-            onClick={isCached ? onOpenCacheManager : onChooseCustomImage}
-          >
-            <FolderOpen size={15} />
-            {isCached ? t('home.changeCachedImage') : t('home.changeCustomImage')}
-          </button>
-        )}
-      />
-    );
-  }
-
-  // Normal flow: 4 interactive steps with cascade locking.
   const steps: Step[] = [
     {
-      key: 'manufacturer',
-      index: 1,
-      icon: Factory,
-      label: t('home.manufacturer'),
-      cta: t('home.chooseBrand'),
-      value: selectedManufacturer ? <MarqueeText text={selectedManufacturer.name} className="val-text" /> : undefined,
-      state: selectedManufacturer ? 'done' : 'active',
-      onClick: onChooseManufacturer,
-      panel: selectedManufacturer ? undefined : <ManufacturerPanel onSelect={onSelectManufacturer} />,
-    },
-    {
-      key: 'board',
-      index: 2,
-      icon: Cpu,
-      label: t('home.board'),
-      cta: t('home.chooseBoard'),
-      value: selectedBoard ? <MarqueeText text={selectedBoard.name} className="val-text" /> : undefined,
-      meta: selectedBoard ? t('home.imageCount', { count: selectedBoard.image_count }) : null,
-      state: !selectedManufacturer ? 'locked' : selectedBoard ? 'done' : 'active',
-      onClick: onChooseBoard,
-      panel: selectedManufacturer && !selectedBoard ? <BoardPanel manufacturer={selectedManufacturer} onSelect={onSelectBoard} /> : undefined,
-    },
-    {
       key: 'image',
-      index: 3,
+      index: 1,
       icon: Database,
       label: t('home.operatingSystem'),
       cta: t('home.chooseOs'),
       value: selectedImage ? osTitle(selectedImage, t) : undefined,
       meta: selectedImage ? osMeta(selectedImage, t) : null,
-      state: !selectedBoard ? 'locked' : selectedImage ? 'done' : 'active',
+      state: selectedImage ? 'done' : 'active',
       onClick: onChooseImage,
-      panel: selectedBoard && !selectedImage ? <OsPanel board={selectedBoard} onSelect={onSelectImage} /> : undefined,
+      panel: selectedImage ? undefined : (
+        <ImagePanel
+          board={selectedBoard}
+          onChooseFile={onChooseCustomImage}
+          onOpenCacheManager={onOpenCacheManager}
+          onSelect={onSelectImage}
+        />
+      ),
     },
     {
       key: 'device',
-      index: 4,
+      index: 2,
       icon: dStep.icon,
       label: dStep.label,
       cta: dStep.cta,
@@ -495,20 +288,20 @@ export function HomePage({
 
   return (
     <SplitLayout
+      boardName={selectedBoard.name}
       steps={steps}
       boardImage={boardImage}
       fullBleed={!!selectedDevice}
-      entering={entering}
-      showMotd={isOnline}
-      onOpenUpdate={onOpenUpdate}
-      footer={foot(
-        !selectedManufacturer ? (
-          <button type="button" className="split-link" onClick={onChooseCustomImage}>
-            <FolderOpen size={15} />
-            {t('home.useCustomImage')}
-          </button>
+      footer={
+        selectedImage?.is_custom ? (
+          <div className="split-nav__actions">
+            <button type="button" className="split-link" onClick={isCached ? onOpenCacheManager : onChooseCustomImage}>
+              <FolderOpen size={15} />
+              {isCached ? t('home.changeCachedImage') : t('home.changeCustomImage')}
+            </button>
+          </div>
         ) : undefined
-      )}
+      }
     />
   );
 }

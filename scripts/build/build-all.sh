@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build script for Armbian Imager, all platforms. Run from anywhere: ./scripts/build/build-all.sh
+# Build script for Wukong Imager, all platforms. Run from anywhere: ./scripts/build/build-all.sh
 set -euo pipefail
 IFS=$'\n\t'
 
@@ -247,7 +247,7 @@ fi
 mkdir -p "$OUTPUT_DIR"
 
 log_info "${BLUE}========================================${NC}"
-log_info "${BLUE}  Armbian Imager - Multi-Platform Build ${NC}"
+log_info "${BLUE}  Wukong Imager - Multi-Platform Build ${NC}"
 log_info "${BLUE}========================================${NC}"
 
 log_info "\n${YELLOW}Checking prerequisites...${NC}"

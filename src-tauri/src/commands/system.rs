@@ -198,18 +198,18 @@ fn open_url_windows(url: &str) -> Result<(), String> {
     Ok(())
 }
 
-/// Check reachability of the Armbian API health endpoint (5s timeout)
+/// Online state of the active catalog: a URL source is probed (5s timeout), the rest are local
 #[tauri::command]
 pub async fn check_connectivity() -> bool {
     #[cfg(debug_assertions)]
     if let Some(online) = super::dev_scenarios::connectivity_override() {
         return online;
     }
-    match CONNECTIVITY_CLIENT
-        .get(crate::config::urls::health())
-        .send()
-        .await
-    {
+    let source = crate::catalog::current_source();
+    let Some(url) = crate::catalog::connectivity_probe(&source) else {
+        return true;
+    };
+    match CONNECTIVITY_CLIENT.get(url).send().await {
         Ok(response) => {
             let online = response.status().is_success() || response.status().is_redirection();
             log_debug!(

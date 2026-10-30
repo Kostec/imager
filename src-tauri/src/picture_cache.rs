@@ -3,6 +3,9 @@
 
 //! Local disk cache for board images and vendor logos with ETag-based conditional refresh.
 //! Cache-first: serve local immediately, refresh stale entries in the background.
+//! Nothing fetches through it while the catalog carries no pictures.
+
+#![allow(dead_code)]
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -13,7 +16,6 @@ use tokio::sync::Mutex;
 
 use base64::Engine;
 
-use crate::config;
 use crate::utils::validate_file_name;
 use crate::{log_debug, log_info, log_warn};
 
@@ -21,8 +23,6 @@ const MODULE: &str = "picture_cache";
 
 /// Entries older than this are considered stale (24 hours).
 const STALE_THRESHOLD_SECS: u64 = 24 * 60 * 60;
-
-const MAX_CONCURRENT_REFRESHES: usize = 5;
 
 /// Metadata for a single cached asset
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -376,181 +376,6 @@ pub async fn read_as_data_uri(path: &Path) -> Option<String> {
             None
         }
     }
-}
-
-/// Pre-populate the asset cache with all board images and vendor logos.
-/// Runs once at startup, semaphore-capped.
-pub async fn prepopulate_assets() {
-    log_info!(MODULE, "Pre-populating asset cache...");
-
-    let boards = match crate::images::fetch_boards().await {
-        Ok(b) => b,
-        Err(e) => {
-            log_warn!(MODULE, "Cannot fetch boards for prepopulate: {}", e);
-            return;
-        }
-    };
-
-    let vendors = match crate::images::fetch_vendors().await {
-        Ok(v) => v,
-        Err(e) => {
-            log_warn!(MODULE, "Cannot fetch vendors for prepopulate: {}", e);
-            Vec::new() // Proceed with board images even if vendors fail.
-        }
-    };
-
-    let total = boards.len() + vendors.len();
-    log_debug!(
-        MODULE,
-        "Pre-populating {} board images + {} vendor logos ({} total)",
-        boards.len(),
-        vendors.len(),
-        total
-    );
-
-    let semaphore = std::sync::Arc::new(tokio::sync::Semaphore::new(MAX_CONCURRENT_REFRESHES));
-    let mut handles = Vec::new();
-
-    for board in &boards {
-        let sem = semaphore.clone();
-        let slug = board.slug.clone();
-        handles.push(tokio::spawn(async move {
-            let _permit = match sem.acquire().await {
-                Ok(p) => p,
-                Err(_) => return,
-            };
-            let url = format!(
-                "{}{}/{}.png",
-                config::urls::BOARD_IMAGES_BASE,
-                config::urls::BOARD_IMAGE_SIZE,
-                slug
-            );
-            get_asset("boards", &slug, &url).await;
-        }));
-    }
-
-    for vendor in &vendors {
-        let sem = semaphore.clone();
-        let slug = vendor.slug.clone();
-        handles.push(tokio::spawn(async move {
-            let _permit = match sem.acquire().await {
-                Ok(p) => p,
-                Err(_) => return,
-            };
-            let url = format!("{}{}.png", config::urls::VENDOR_IMAGES_BASE, slug);
-            get_asset("vendors", &slug, &url).await;
-        }));
-    }
-
-    let mut completed = 0;
-    for handle in handles {
-        if handle.await.is_ok() {
-            completed += 1;
-        }
-    }
-
-    log_info!(
-        MODULE,
-        "Pre-populate complete: {}/{} assets processed",
-        completed,
-        total
-    );
-}
-
-/// Refresh stale assets (last checked >24h ago) with conditional requests
-pub async fn refresh_stale_assets() {
-    let meta = load_meta().await;
-
-    if meta.entries.is_empty() {
-        log_debug!(MODULE, "No cached assets to refresh");
-        return;
-    }
-
-    let now = now_secs();
-    let stale_entries: Vec<(String, AssetEntry)> = meta
-        .entries
-        .iter()
-        .filter(|(_, entry)| now.saturating_sub(entry.last_checked) > STALE_THRESHOLD_SECS)
-        .map(|(k, v)| (k.clone(), v.clone()))
-        .collect();
-
-    if stale_entries.is_empty() {
-        log_debug!(MODULE, "All {} cached assets are fresh", meta.entries.len());
-        return;
-    }
-
-    log_debug!(
-        MODULE,
-        "Refreshing {} stale assets (of {} total)",
-        stale_entries.len(),
-        meta.entries.len()
-    );
-
-    let semaphore = std::sync::Arc::new(tokio::sync::Semaphore::new(MAX_CONCURRENT_REFRESHES));
-    let mut handles = Vec::new();
-
-    for (key, entry) in stale_entries {
-        let sem = semaphore.clone();
-        let assets_dir = get_assets_dir();
-
-        handles.push(tokio::spawn(async move {
-            let _permit = match sem.acquire().await {
-                Ok(p) => p,
-                Err(_) => return,
-            };
-
-            // Reconstruct the file path and URL from the meta key.
-            let parts: Vec<&str> = key.splitn(2, '/').collect();
-            if parts.len() != 2 {
-                return;
-            }
-            let kind = parts[0];
-            let asset_key = parts[1];
-            let Some(file_path) = asset_path(&assets_dir, kind, asset_key) else {
-                return;
-            };
-
-            if !file_path.exists() {
-                return;
-            }
-
-            let url = match kind {
-                "boards" => format!(
-                    "{}{}/{}.png",
-                    config::urls::BOARD_IMAGES_BASE,
-                    config::urls::BOARD_IMAGE_SIZE,
-                    asset_key
-                ),
-                "vendors" => format!("{}{}.png", config::urls::VENDOR_IMAGES_BASE, asset_key),
-                _ => match &entry.url {
-                    Some(u) => u.clone(),
-                    None => return,
-                },
-            };
-
-            refresh_asset(
-                &key,
-                &url,
-                &file_path,
-                entry.etag.as_deref(),
-                entry.last_modified.as_deref(),
-            )
-            .await;
-        }));
-    }
-
-    let mut processed = 0;
-    for handle in handles {
-        if handle.await.is_ok() {
-            processed += 1;
-        }
-    }
-
-    log_debug!(
-        MODULE,
-        "Background refresh complete: {} assets processed",
-        processed
-    );
 }
 
 #[cfg(test)]

@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 
 /// Generic API response envelope wrapping data + metadata
 #[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)]
 pub struct ApiResponse<T> {
     pub data: T,
     #[serde(default)]

@@ -10,8 +10,6 @@ import {
   setCacheEnabled,
   getCacheMaxSize,
   setCacheMaxSize,
-  getForceOffline,
-  setForceOffline,
 } from '../../hooks/useSettings';
 import { clearCache, getCacheBreakdown } from '../../hooks/useTauri';
 import { useAsyncData } from '../../hooks/useAsyncData';
@@ -72,10 +70,6 @@ export function DownloadsSection() {
     fallback: CACHE.DEFAULT_SIZE,
     toastKey: 'settings.toast.cacheSize',
   });
-  const offline = useSettingToggle(getForceOffline, setForceOffline, {
-    fallback: SETTINGS.DEFAULTS.FORCE_OFFLINE,
-    toastKey: 'settings.toast.forceOffline',
-  });
   const { data, loading, error, reload } = useAsyncData<CacheBreakdown>(getCacheBreakdown, []);
   const [confirmClear, setConfirmClear] = useState(false);
   const [clearing, setClearing] = useState(false);
@@ -85,7 +79,6 @@ export function DownloadsSection() {
   const breakdown = data ?? CACHE.EMPTY_BREAKDOWN;
   const limit = maxSize.value ?? CACHE.DEFAULT_SIZE;
   const enabled = cacheEnabled.value ?? SETTINGS.DEFAULTS.CACHE_ENABLED;
-  const isOffline = offline.value ?? SETTINGS.DEFAULTS.FORCE_OFFLINE;
   const nothingCached = !loading && !error && breakdown.total === 0;
 
   const sizeOptions = useMemo<SelectOption<string>[]>(() => {
@@ -129,8 +122,7 @@ export function DownloadsSection() {
         hero="downloads"
         title={t('settings.nav.downloads')}
         lead={t('settings.downloads.lead')}
-        heroState={{ offline: String(isOffline) }}
-        loading={offline.value === undefined}
+        heroState={{ offline: 'false' }}
         actions={
           !nothingCached &&
           !loading && (
@@ -184,17 +176,6 @@ export function DownloadsSection() {
           }}
           control={nothingCached ? <span className="downloads-value">{t('settings.downloads.manageEmpty')}</span> : null}
           trailing={<ChevronRight size={16} aria-hidden="true" />}
-        />
-      </SettingsGroup>
-
-      <SettingsGroup eyebrow={t('settings.downloads.networkEyebrow')}>
-        <ToggleRow
-          label={t('settings.forceOffline')}
-          description={t('settings.forceOfflineDescription')}
-          checked={isOffline}
-          loading={offline.value === undefined}
-          busy={offline.busy}
-          onChange={offline.set}
         />
       </SettingsGroup>
 

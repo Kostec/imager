@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright (c) 2025-2026 Daniele Briguglio, superkali@armbian.com
 
-//! Armbian Imager: cross-platform Tauri app for downloading and flashing
-//! Armbian OS images to SD cards and USB drives.
+//! Wukong Imager: cross-platform Tauri app for flashing OS images to SD cards
+//! for the Wukong Pi Zero. A fork of Armbian Imager.
 
 // Prevents additional console window on Windows in release
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod autoconfig;
 mod cache;
+mod catalog;
 mod commands;
 mod config;
 mod decompress;
@@ -19,7 +20,6 @@ mod download;
 mod flash;
 mod images;
 mod logging;
-mod paste;
 mod picture_cache;
 mod qdl;
 mod ssh_keys;
@@ -96,16 +96,10 @@ fn cleanup_custom_decompress_cache() {
     }
 }
 
-/// Returns true if running as AppImage (APPIMAGE env var is set by AppImage runtime)
-#[cfg(target_os = "linux")]
-fn is_appimage() -> bool {
-    std::env::var("APPIMAGE").is_ok()
-}
-
 fn main() {
     logging::init();
 
-    log_info!("main", "=== Armbian Imager Starting ===");
+    log_info!("main", "=== Wukong Imager Starting ===");
     log_info!("main", "Version: {}", env!("CARGO_PKG_VERSION"));
     log_info!(
         "main",
@@ -113,14 +107,6 @@ fn main() {
         std::env::consts::OS,
         std::env::consts::ARCH
     );
-    log_info!("main", "Config URLs:");
-    log_info!("main", "  - API Base: {}", config::urls::api_base());
-    log_info!(
-        "main",
-        "  - Board images: {}",
-        config::urls::BOARD_IMAGES_BASE
-    );
-
     // Drop the legacy pre-migration api-images.json cache.
     images::cleanup_legacy_cache();
 
@@ -135,25 +121,11 @@ fn main() {
         utils::leftover_is_stale(name, meta.modified().ok())
     });
 
+    #[cfg_attr(not(debug_assertions), allow(unused_mut))]
     let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_store::Builder::new().build());
-
-    // Enable updater only for AppImage on Linux (other formats like .deb don't support it)
-    #[cfg(target_os = "linux")]
-    {
-        if is_appimage() {
-            builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
-        } else {
-            log_info!("main", "Updater disabled (not running as AppImage)");
-        }
-    }
-    #[cfg(not(target_os = "linux"))]
-    {
-        builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
-    }
 
     // Lets an MCP client drive dev builds; localhost only, never in release.
     #[cfg(debug_assertions)]
@@ -201,9 +173,6 @@ fn main() {
             commands::system::get_armbian_release,
             commands::system::check_connectivity,
             commands::ssh_keys::lookup_ssh_keys,
-            commands::update::get_github_release,
-            commands::update::is_app_in_applications,
-            paste::upload::upload_logs,
             commands::settings::get_logs,
             commands::settings::get_system_info,
             commands::settings::get_tauri_version,
@@ -258,12 +227,6 @@ fn main() {
             }
 
             manage_download_cache(app);
-
-            // Background asset cache: refresh stale entries, then pre-populate everything.
-            tauri::async_runtime::spawn(async {
-                picture_cache::refresh_stale_assets().await;
-                picture_cache::prepopulate_assets().await;
-            });
 
             Ok(())
         })

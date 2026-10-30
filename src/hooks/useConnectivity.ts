@@ -10,7 +10,7 @@ import { getForceOffline } from './useSettings';
 import { POLLING, EVENTS } from '../config';
 
 interface ConnectivityState {
-  /** Whether the app can reach the Armbian API */
+  /** Whether the active catalog source is reachable; always true for the built-in catalog */
   isOnline: boolean;
 }
 

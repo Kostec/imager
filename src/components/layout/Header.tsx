@@ -4,22 +4,17 @@
 import type { Ref } from 'react';
 import { ArrowLeft, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import armbianLogoWhite from '../../assets/armbian-logo-white.png';
-import armbianLogoBlack from '../../assets/armbian-logo-black.png';
-import type { BoardInfo, ImageInfo, BlockDevice, SelectionStep, Manufacturer } from '../../types';
+import { APP_ICON } from '../../assets';
+import type { ImageInfo, BlockDevice, SelectionStep } from '../../types';
 import { isEdlImage } from '../../types';
-import { isDetectedBoard } from '../../utils';
 import { SettingsButton } from '../settings';
 
 interface HeaderProps {
-  selectedManufacturer?: Manufacturer | null;
-  selectedBoard?: BoardInfo | null;
   selectedImage?: ImageInfo | null;
   selectedDevice?: BlockDevice | null;
   onReset?: () => void;
   onNavigateToStep?: (step: SelectionStep) => void;
   isFlashing?: boolean;
-  isOnline?: boolean;
   /** Hide the step progress pill (e.g. on the welcome landing). */
   hideSteps?: boolean;
   /** Hide the settings gear (e.g. on the welcome landing). */
@@ -36,14 +31,11 @@ interface HeaderProps {
 }
 
 export function Header({
-  selectedManufacturer,
-  selectedBoard,
   selectedImage,
   selectedDevice,
   onReset,
   onNavigateToStep,
   isFlashing,
-  isOnline = true,
   hideSteps = false,
   hideSettings = false,
   hideLogo = false,
@@ -54,25 +46,14 @@ export function Header({
   settingsButtonRef,
 }: HeaderProps) {
   const { t } = useTranslation();
-  const isCustomImage = selectedImage?.is_custom;
-
-  // Detected-board images show all 4 steps; generic .img files show 2.
-  const hasDetectedBoard = isDetectedBoard(selectedBoard);
-  const isGenericCustom = isCustomImage && !hasDetectedBoard;
   // EDL targets are USB devices in download mode, not storage drives.
   const isEdl = !!selectedImage && isEdlImage(selectedImage);
   const targetLabel = t(isEdl ? 'header.stepDevice' : 'header.stepStorage');
-  const steps = isGenericCustom
-    ? [
-        { key: 'image' as SelectionStep, label: t('header.stepImage'), completed: !!selectedImage },
-        { key: 'device' as SelectionStep, label: targetLabel, completed: !!selectedDevice },
-      ]
-    : [
-        { key: 'manufacturer' as SelectionStep, label: t('header.stepManufacturer'), completed: !!selectedManufacturer },
-        { key: 'board' as SelectionStep, label: t('header.stepBoard'), completed: !!selectedBoard },
-        { key: 'image' as SelectionStep, label: t('header.stepOs'), completed: !!selectedImage },
-        { key: 'device' as SelectionStep, label: targetLabel, completed: !!selectedDevice },
-      ];
+  // The board is fixed, so the flow is only the image and the target.
+  const steps = [
+    { key: 'image' as SelectionStep, label: t('header.stepImage'), completed: !!selectedImage },
+    { key: 'device' as SelectionStep, label: targetLabel, completed: !!selectedDevice },
+  ];
 
   const canReset = !isFlashing && !settingsOpen && !!onReset;
 
@@ -80,10 +61,8 @@ export function Header({
     if (canReset) onReset?.();
   }
 
-  // Back-navigation reopens API-driven panels (manufacturer/board/OS), so it's disabled offline:
-  // there the only entry is a custom/cached image and those panels can't load without the network.
-  const canNavigateSteps = !isFlashing && !settingsOpen && !!onNavigateToStep && isOnline;
-  const showSteps = !hideSteps && (isOnline || !!selectedManufacturer);
+  const canNavigateSteps = !isFlashing && !settingsOpen && !!onNavigateToStep;
+  const showSteps = !hideSteps;
 
   function handleStepClick(step: SelectionStep, completed: boolean) {
     if (canNavigateSteps && completed) {
@@ -102,14 +81,12 @@ export function Header({
           onClick={handleLogoClick}
           title={canReset ? t('header.resetTooltip') : undefined}
         >
-          {/* Black wordmark on light theme, white on dark; toggled via CSS to also cover 'auto'. */}
-          <img src={armbianLogoBlack} alt="Armbian" className="logo-main logo-main--light" />
-          <img src={armbianLogoWhite} alt="" aria-hidden="true" className="logo-main logo-main--dark" />
+          <img src={APP_ICON} alt="" aria-hidden="true" className="logo-main" />
+          <span className="logo-name">Wukong Imager</span>
         </div>
       )}
       <div className="header-right">
         <div className={`header-controls${settingsOpen ? ' is-settings' : ''}`}>
-          {/* Steps hidden on the welcome landing and the offline entry (banner already says it) */}
           {showSteps && (
             <div className="header-steps" aria-hidden={settingsOpen || undefined} inert={settingsOpen || undefined}>
               {steps.map((step, index) => (

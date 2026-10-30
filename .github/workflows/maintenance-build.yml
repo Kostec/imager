@@ -97,7 +97,7 @@ jobs:
 
       - name: Check release binary has no dev scenarios
         shell: bash
-        run: ./scripts/build/check-release-binary.sh src-tauri/target/release/armbian-imager
+        run: ./scripts/build/check-release-binary.sh src-tauri/target/release/wukong-imager
 
       - name: Check frontend bundle has no dev scenarios
         shell: bash
@@ -175,7 +175,7 @@ jobs:
 
       - name: Check release binary has no dev scenarios
         shell: bash
-        run: ./scripts/build/check-release-binary.sh src-tauri/target/release/armbian-imager
+        run: ./scripts/build/check-release-binary.sh src-tauri/target/release/wukong-imager
 
       - name: Check frontend bundle has no dev scenarios
         shell: bash
@@ -285,7 +285,7 @@ jobs:
 
       - name: Check release binary has no dev scenarios
         shell: bash
-        run: ./scripts/build/check-release-binary.sh "src-tauri/target/${{ matrix.target }}/release/armbian-imager"
+        run: ./scripts/build/check-release-binary.sh "src-tauri/target/${{ matrix.target }}/release/wukong-imager"
 
       - name: Check frontend bundle has no dev scenarios
         shell: bash
@@ -392,7 +392,7 @@ jobs:
 
       - name: Check release binary has no dev scenarios
         shell: bash
-        run: ./scripts/build/check-release-binary.sh src-tauri/target/x86_64-pc-windows-msvc/release/armbian-imager.exe
+        run: ./scripts/build/check-release-binary.sh src-tauri/target/x86_64-pc-windows-msvc/release/wukong-imager.exe
 
       - name: Check frontend bundle has no dev scenarios
         shell: bash
@@ -456,7 +456,7 @@ jobs:
 
       - name: Check release binary has no dev scenarios
         shell: bash
-        run: ./scripts/build/check-release-binary.sh src-tauri/target/aarch64-pc-windows-msvc/release/armbian-imager.exe
+        run: ./scripts/build/check-release-binary.sh src-tauri/target/aarch64-pc-windows-msvc/release/wukong-imager.exe
 
       - name: Check frontend bundle has no dev scenarios
         shell: bash

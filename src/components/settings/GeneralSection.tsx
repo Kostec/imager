@@ -9,21 +9,12 @@ import { useMotion, type MotionMode } from '../../contexts/MotionContext';
 import { changeLanguage, getSystemLanguage } from '../../i18n';
 import { SUPPORTED_LANGUAGES, AUTO_LANGUAGE_CODE, flagUrl } from '../../config/i18n';
 import { EVENTS, SETTINGS } from '../../config';
-import {
-  getLanguage,
-  getShowMotd,
-  setShowMotd,
-  getShowUpdaterModal,
-  setShowUpdaterModal,
-  getShowWelcome,
-  setShowWelcome,
-} from '../../hooks/useSettings';
+import { getLanguage } from '../../hooks/useSettings';
 import { useAsyncData } from '../../hooks/useAsyncData';
-import { useSettingToggle } from '../../hooks/useSettingToggle';
 import { useToasts } from '../../hooks/useToasts';
 import { logWarn } from '../../hooks/useTauri';
 import { SettingsHero } from './SettingsHero';
-import { SegmentedControl, SelectMenu, SettingsGroup, SettingsRow, ToggleRow, type SelectOption } from './controls';
+import { SegmentedControl, SelectMenu, SettingsGroup, SettingsRow, type SelectOption } from './controls';
 
 const THEME_CARDS: { value: Theme; Icon: typeof Sun; labelKey: string }[] = [
   { value: SETTINGS.THEME_MODES.LIGHT, Icon: Sun, labelKey: 'settings.themeLight' },
@@ -82,20 +73,6 @@ export function GeneralSection() {
   const { data: savedLanguage } = useAsyncData(readSavedLanguage, []);
   const [pickedLanguage, setPickedLanguage] = useState<string | null>(null);
   const language = pickedLanguage ?? savedLanguage;
-
-  const welcome = useSettingToggle(getShowWelcome, setShowWelcome, {
-    fallback: SETTINGS.DEFAULTS.SHOW_WELCOME,
-    toastKey: 'settings.toast.welcome',
-  });
-  const motd = useSettingToggle(getShowMotd, setShowMotd, {
-    fallback: SETTINGS.DEFAULTS.SHOW_MOTD,
-    toastKey: 'settings.toast.motd',
-    event: EVENTS.MOTD_CHANGED,
-  });
-  const updater = useSettingToggle(getShowUpdaterModal, setShowUpdaterModal, {
-    fallback: SETTINGS.DEFAULTS.SHOW_UPDATER_MODAL,
-    toastKey: 'settings.toast.updater',
-  });
 
   const { data: systemLanguage } = useAsyncData(getSystemLanguage, []);
   const systemCode = systemLanguage ?? i18n.resolvedLanguage ?? i18n.language;
@@ -192,33 +169,6 @@ export function GeneralSection() {
               searchPlaceholder={t('settings.searchLanguage')}
             />
           }
-        />
-      </SettingsGroup>
-
-      <SettingsGroup eyebrow={t('settings.general.noticesEyebrow')}>
-        <ToggleRow
-          label={t('settings.notifications.showWelcome')}
-          description={t('settings.notifications.showWelcomeDescription')}
-          checked={welcome.value ?? false}
-          loading={welcome.value === undefined}
-          busy={welcome.busy}
-          onChange={welcome.set}
-        />
-        <ToggleRow
-          label={t('settings.notifications.showMotd')}
-          description={t('settings.notifications.showMotdDescription')}
-          checked={motd.value ?? false}
-          loading={motd.value === undefined}
-          busy={motd.busy}
-          onChange={motd.set}
-        />
-        <ToggleRow
-          label={t('settings.notifications.showUpdaterModal')}
-          description={t('settings.notifications.showUpdaterModalDescription')}
-          checked={updater.value ?? false}
-          loading={updater.value === undefined}
-          busy={updater.busy}
-          onChange={updater.set}
         />
       </SettingsGroup>
     </>

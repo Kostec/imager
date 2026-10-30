@@ -57,7 +57,7 @@ fn read_last_lines(path: &std::path::PathBuf, lines: usize) -> Result<String, St
 /// Get the latest log contents (last 10k lines when the file exceeds 5MB)
 #[tauri::command]
 pub fn get_logs() -> Result<String, String> {
-    use crate::config::paste::{MAX_LOG_LINES, MAX_LOG_SIZE};
+    use crate::config::log_files::{MAX_LOG_LINES, MAX_LOG_SIZE};
     use crate::logging;
     use std::fs::Metadata;
 
