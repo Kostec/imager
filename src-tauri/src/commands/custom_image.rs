@@ -274,7 +274,7 @@ pub async fn classify_custom_image(
             let probe_path = PathBuf::from(&path);
             // A failed probe hides the picker; it never fails the classification.
             tokio::task::spawn_blocking(move || {
-                crate::autoconfig::require_firstlogin_marker(&probe_path).is_ok()
+                crate::autoconfig::require_supported_image(&probe_path).is_ok()
             })
             .await
             .unwrap_or(false)

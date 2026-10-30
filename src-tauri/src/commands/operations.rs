@@ -8,7 +8,7 @@ use std::sync::Arc;
 use tauri::{AppHandle, State};
 use tauri_plugin_store::StoreExt;
 
-use crate::autoconfig::{prepare_flash_copy, AutoconfigConfig, PrepError};
+use crate::autoconfig::{effective_profile, prepare_flash_copy, AutoconfigConfig, PrepError};
 use crate::config;
 use crate::devices::target::TAG_NOT_FOUND;
 use crate::devices::{get_block_devices, select_flash_target, FlashTarget, TargetRefusal};
@@ -173,8 +173,8 @@ pub async fn download_image(
     }
 }
 
-/// Start flashing an image to a device. With `autoconfig` Some, injects the Armbian first-boot preset
-/// into a per-flash copy (original never mutated) and flashes that; None flashes the original directly.
+/// Start flashing an image to a device. With settings in `autoconfig`, lays the first-boot bundle onto a
+/// per-flash copy (original never mutated) and flashes that; otherwise flashes the original directly.
 #[tauri::command]
 pub async fn flash_image(
     image_path: String,
@@ -277,10 +277,9 @@ async fn prepare_and_flash(
         return Err(e);
     }
 
-    // The preset goes into a per-flash copy (removed on drop) so the cached image stays pristine.
-    let working_copy = match autoconfig {
+    // Settings go into a per-flash copy (removed on drop) so the cached image stays pristine; with none, there is no copy.
+    let working_copy = match effective_profile(autoconfig) {
         Some(profile) => Some(
-            // Catalog images always carry the script, so the marker probe only refuses custom images built without it.
             prepare_flash_copy(
                 path.clone(),
                 autoconfig_temp_dir(),

@@ -1,0 +1,2 @@
+# Device scripts run under bash on the board: git on Windows must not hand them CRLF.
+*.sh text eol=lf

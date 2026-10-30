@@ -50,6 +50,12 @@ sys-locale = "0.3"
 filetime = "0.2"
 # In-repo crate: writes the first-boot autoconfig file into an image's ext4 rootfs
 armbian-write-conf = { path = "../crates/armbian-write-conf" }
+# In-repo crate: creates the first-boot files in the classic ext4 rootfs of Wukong images
+classic-ext4 = { path = "../crates/classic-ext4" }
+# Account password hashes ($6$) and the WPA2 key, computed here so that no plain text reaches the card
+sha-crypt = "0.5"
+pbkdf2 = { version = "0.12", default-features = false, features = ["hmac"] }
+sha1 = "0.10"
 
 [dev-dependencies]
 tempfile = "3"

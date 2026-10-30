@@ -21,6 +21,7 @@ mod flash;
 mod images;
 mod logging;
 mod picture_cache;
+mod provision;
 mod qdl;
 mod ssh_keys;
 mod utils;
@@ -144,6 +145,11 @@ fn main() {
             commands::board_queries::get_images_for_board,
             commands::board_queries::get_vendors,
             commands::board_queries::get_block_devices,
+            commands::board_queries::get_catalog_source,
+            commands::board_queries::set_catalog_source,
+            commands::board_queries::check_catalog_source,
+            commands::board_queries::get_catalog_error,
+            commands::board_queries::pick_catalog_folder,
             commands::scraping::get_cached_board_image,
             commands::scraping::get_cached_vendor_logo,
             commands::operations::request_write_authorization,
@@ -173,6 +179,10 @@ fn main() {
             commands::system::get_armbian_release,
             commands::system::check_connectivity,
             commands::ssh_keys::lookup_ssh_keys,
+            commands::provision::hash_password,
+            commands::provision::derive_wifi_psk,
+            commands::provision::probe_custom_image,
+            commands::provision::fetch_ssh_keys,
             commands::settings::get_logs,
             commands::settings::get_system_info,
             commands::settings::get_tauri_version,
@@ -225,6 +235,8 @@ fn main() {
                     );
                 }
             }
+
+            catalog::init_from_store(app.handle());
 
             manage_download_cache(app);
 

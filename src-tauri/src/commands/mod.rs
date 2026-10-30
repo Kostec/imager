@@ -9,6 +9,7 @@ pub mod custom_image;
 pub mod dev_scenarios;
 pub mod operations;
 pub mod progress;
+pub mod provision;
 pub mod qdl_operations;
 pub mod scraping;
 pub mod settings;

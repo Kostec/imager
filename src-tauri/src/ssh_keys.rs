@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 // Copyright (c) 2025-2026 Daniele Briguglio, superkali@armbian.com
 
-//! Looks up the public SSH keys a profile's key source serves, to show what the board fetches at first boot.
+//! Looks up the public SSH keys a profile's key source serves. They are fetched here and written to the card,
+//! so the board needs no network for them.
 
 use std::time::Duration;
 
@@ -203,6 +204,31 @@ pub fn parse_keys(body: &str) -> Result<SshKeyLookup, String> {
     Ok(SshKeyLookup { total, keys })
 }
 
+/// The valid keys of a body as `authorized_keys` lines, at most `MAX_KEYS`, or `TAG_NONE`.
+/// Rebuilt from what was parsed, so no option or stray text from the source reaches the card.
+pub fn authorized_keys(body: &str) -> Result<String, String> {
+    let mut lines = Vec::new();
+    for line in body.lines() {
+        if lines.len() == cfg::MAX_KEYS {
+            break;
+        }
+        let Some(key) = parse_key_line(line) else {
+            continue;
+        };
+        let encoded = next_token(line).and_then(|(_, rest)| next_token(rest));
+        if let Some((encoded, _)) = encoded {
+            lines.push(match key.comment {
+                Some(comment) => format!("{} {encoded} {comment}", key.key_type),
+                None => format!("{} {encoded}", key.key_type),
+            });
+        }
+    }
+    if lines.is_empty() {
+        return Err(TAG_NONE.to_string());
+    }
+    Ok(lines.join("\n"))
+}
+
 pub fn append_capped(buf: &mut Vec<u8>, chunk: &[u8], cap: usize) -> Result<(), String> {
     if buf.len().saturating_add(chunk.len()) > cap {
         return Err(TAG_TOO_LARGE.to_string());
@@ -278,6 +304,26 @@ pub async fn lookup(source: SshKeySource, value: &str) -> Result<SshKeyLookup, S
             found.total
         ),
         Err(code) => log_warn!(MODULE, "SSH key lookup: source={kind}, {code}"),
+    }
+    result
+}
+
+/// `authorized_keys` text for the card, with the same errors and logging rules as [`lookup`].
+pub async fn fetch_authorized_keys(source: SshKeySource, value: &str) -> Result<String, String> {
+    let kind = source.log_label();
+    let result = match source_url(source, value) {
+        Some(url) => fetch_body(url)
+            .await
+            .and_then(|body| authorized_keys(&String::from_utf8_lossy(&body))),
+        None => Err(TAG_INVALID_INPUT.to_string()),
+    };
+    match &result {
+        Ok(text) => log_info!(
+            MODULE,
+            "SSH key fetch: source={kind}, {} keys",
+            text.lines().count()
+        ),
+        Err(code) => log_warn!(MODULE, "SSH key fetch: source={kind}, {code}"),
     }
     result
 }
@@ -449,6 +495,29 @@ mod tests {
         assert_eq!(found.keys[0].fingerprint, ED25519_FP);
         assert_eq!(found.keys[1].fingerprint, RSA_FP);
         assert_eq!(found.keys[1].comment.as_deref(), Some("rsa key"));
+    }
+
+    #[test]
+    fn authorized_keys_keeps_only_valid_keys_as_lines() {
+        let blob = ED25519.split(' ').nth(1).unwrap();
+        let body = format!(
+            "# keys\r\n{ED25519}\r\ncommand=\"rm -rf /\" ssh-ed25519 {blob} sneaky\r\n\
+             junk\r\nssh-ed25519 {blob}   me\u{7}@host\t \r\n{P384}\r\n"
+        );
+        assert_eq!(
+            authorized_keys(&body).unwrap(),
+            format!("{ED25519}\nssh-ed25519 {blob} me@host\n{P384}")
+        );
+    }
+
+    #[test]
+    fn authorized_keys_refuses_a_body_without_keys_and_caps_the_rest() {
+        assert_eq!(authorized_keys("Not Found\n").unwrap_err(), TAG_NONE);
+        let body = format!("{ED25519}\n").repeat(cfg::MAX_KEYS + 7);
+        assert_eq!(
+            authorized_keys(&body).unwrap().lines().count(),
+            cfg::MAX_KEYS
+        );
     }
 
     #[test]
