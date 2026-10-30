@@ -51,3 +51,4 @@ coverage/
 *.tmp
 *.temp
 .cache
+.autopilot/serve.*
