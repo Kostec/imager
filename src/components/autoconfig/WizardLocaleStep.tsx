@@ -3,9 +3,9 @@
 
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Clock, Globe, MapPin } from 'lucide-react';
-import { COMMON_LOCALES, getTimezones, localeLabel, timezoneOffset } from '../../config/autoconfig';
-import { localeCountry, type RegionMode } from '../../config/profileEditorModel';
+import { Clock, Globe, Image, Keyboard } from 'lucide-react';
+import { COMMON_LOCALES, KEYBOARD_LAYOUTS, getTimezones, localeLabel, timezoneOffset } from '../../config/autoconfig';
+import { localeCountry, type RegionChoice } from '../../config/profileEditorModel';
 import type { ProfileWizardState } from '../../hooks/useProfileWizard';
 import { SegmentedControl, SelectMenu, type SelectOption } from '../settings/controls';
 import { CountryFlag } from '../settings/editor/EditorParts';
@@ -40,20 +40,28 @@ export function WizardLocaleStep({ wizard }: { wizard: ProfileWizardState }) {
     [placeholder, i18n.language]
   );
 
+  const keyboards = useMemo<SelectOption<string>[]>(
+    () => [
+      { value: '', label: placeholder, icon: <Keyboard aria-hidden="true" /> },
+      ...KEYBOARD_LAYOUTS.map((k) => ({ value: k, label: k, icon: <Keyboard aria-hidden="true" /> })),
+    ],
+    [placeholder]
+  );
+
   return (
     <>
-      <SegmentedControl<RegionMode>
-        value={region.apply ? region.mode : null}
+      <SegmentedControl<RegionChoice>
+        value={region.apply ? 'choose' : 'keep'}
         ariaLabel={t('settings.autoconfig.wizard.locale.title')}
         options={[
-          { value: 'location', label: t('settings.autoconfig.wizard.locale.location'), icon: <MapPin aria-hidden="true" /> },
+          { value: 'keep', label: t('settings.autoconfig.wizard.locale.keep'), icon: <Image aria-hidden="true" /> },
           { value: 'choose', label: t('settings.autoconfig.wizard.locale.choose'), icon: <Globe aria-hidden="true" /> },
         ]}
-        onChange={(mode) => patch('region', { mode, apply: true })}
+        onChange={(choice) => patch('region', { apply: choice === 'choose' })}
       />
       {!region.apply ? (
         <p className="pw-line">{t('settings.autoconfig.wizard.pending.locale')}</p>
-      ) : region.mode === 'choose' ? (
+      ) : (
         <div className="pw-two">
           <WizardField label={t('settings.autoconfig.wizard.locale.language')}>
             <SelectMenu
@@ -75,9 +83,15 @@ export function WizardLocaleStep({ wizard }: { wizard: ProfileWizardState }) {
               searchPlaceholder={t('settings.autoconfig.wizard.locale.searchTimezone')}
             />
           </WizardField>
+          <WizardField label={t('settings.autoconfig.wizard.locale.keyboard')}>
+            <SelectMenu
+              value={region.keyboard}
+              options={keyboards}
+              onChange={(keyboard) => patch('region', { keyboard })}
+              ariaLabel={t('settings.autoconfig.wizard.locale.keyboard')}
+            />
+          </WizardField>
         </div>
-      ) : (
-        <p className="pw-line">{t('settings.autoconfig.wizard.locale.locationLine')}</p>
       )}
     </>
   );

@@ -10,6 +10,13 @@ export type TFn = (key: string, opts?: Record<string, unknown>) => string;
 const WRITE_FAILED_PATTERN = /\[WRITE_FAILED:(\d+)\]/;
 const DEVICE_TOO_SMALL_PATTERN = /\[DEVICE_TOO_SMALL:(\d+):(\d+)\]/;
 const QDL_ERROR_TAG = '[QDL_ERROR]';
+/** Twin of TAG_COMPRESSED in src-tauri/src/commands/provision.rs */
+const PROBE_COMPRESSED_TAG = '[PROBE_COMPRESSED]';
+
+export function isProbeCompressedError(error: unknown): boolean {
+  return getErrorMessage(error, '').includes(PROBE_COMPRESSED_TAG);
+}
+
 /** Twin of autoconfig::TAG_NOT_ARMBIAN in src-tauri/src/autoconfig.rs */
 const AUTOCONFIG_NOT_ARMBIAN_TAG = '[AUTOCONFIG_NOT_ARMBIAN]';
 
@@ -32,6 +39,7 @@ const IMAGE_ERROR_KEYS = {
   '[VERIFY_READ_FAILED]': 'error.verifyReadFailed',
   '[DECOMPRESS_FAILED]': 'error.imageDecompressFailed',
   '[IMAGE_INVALID]': 'error.imageInvalid',
+  '[AUTOCONFIG_ALREADY_BOOTED]': 'error.autoconfigAlreadyBooted',
 } as const;
 
 const QDL_ERROR_KEYS = {

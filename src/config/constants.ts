@@ -92,8 +92,8 @@ export const SETTINGS_VIEW = {
 
 /** Parts of the interface that are switched off in this build */
 export const FEATURES: { AUTOCONFIG: boolean } = {
-  /** First-boot settings and profiles: hidden until they work on Wukong images */
-  AUTOCONFIG: false,
+  /** First-boot settings and profiles */
+  AUTOCONFIG: true,
 };
 
 /** Storage key prefixes for sessionStorage/localStorage */
@@ -376,9 +376,17 @@ export const UI = {
 
 /** Autoconfig limits and timings for the profile forms */
 export const AUTOCONFIG = {
-  /** WPA passphrase length; a 64-character hex PSK also works, so the check never blocks */
+  /** WPA passphrase length; a 64-character hex PSK also works */
   WIFI_KEY_MIN: 8,
   WIFI_KEY_MAX: 63,
+  SSID_MAX_BYTES: 32,
+  USER_SCRIPT_MAX_BYTES: 64 * 1024,
+  HOSTNAME_MAX_BYTES: 253,
+  HOSTNAME_LABEL_MAX: 63,
+  /** Offered in a new profile */
+  HOSTNAME_PROPOSED: 'wukong',
+  /** What the board is called when a profile leaves the name alone */
+  HOSTNAME_OF_IMAGE: 'wukongpi',
   KEY_LOOKUP_DEBOUNCE_MS: 600,
 } as const;
 

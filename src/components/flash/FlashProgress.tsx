@@ -12,6 +12,7 @@ import { formatImageIdentity } from '../../utils';
 import { SLUGS, getOsName } from '../../config';
 import { getCachedBoardImage } from '../../hooks/useTauri';
 import { useFlashOperation } from '../../hooks/useFlashOperation';
+import { sshCommand } from '../../config/autoconfig';
 import { getDeviceType } from '../../utils/deviceUtils';
 import { FlashStageIcon, getStageKey, isIndeterminateStage } from './FlashStageIcon';
 import { FlashActions } from './FlashActions';
@@ -88,6 +89,7 @@ export function FlashProgress({
 
   const isCustomIcon = image.is_custom && board.slug === SLUGS.CUSTOM;
   const isEdl = isEdlImage(image);
+  const connectCommand = autoconfig && !isEdl ? sshCommand(autoconfig) : null;
 
   // A system disk only reaches this screen once unlocked, so the Lock glyph would mislead.
   const iconType = getDeviceType({ ...device, is_system: false });
@@ -187,6 +189,9 @@ export function FlashProgress({
                         ? t('flash.successHintDeviceCustom')
                         : t('flash.successHintDevice', { boardName: board.name })}
                   </p>
+                  {connectCommand && (
+                    <p className="flash-success-hint">{t('flash.connectHint', { command: connectCommand })}</p>
+                  )}
                   {verifyAborted && (
                     <p className="flash-success-caveat">
                       <ShieldOff size={15} aria-hidden="true" />

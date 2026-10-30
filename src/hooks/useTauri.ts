@@ -3,7 +3,8 @@
 
 import { invoke } from '@tauri-apps/api/core';
 import { qdlToBlockDevice, isDeviceConnected } from '../utils/deviceUtils';
-import type { BoardInfo, ImageInfo, BlockDevice, DownloadProgress, FlashProgress, CustomImageInfo, CustomImageClassification, ArmbianReleaseInfo, CachedImageInfo, CacheBreakdown, QdlDevice, VendorInfo, AutoconfigConfig, DevScenario, DevScenariosStatus, DevTestImage, SshKeyLookup, SshKeySource } from '../types';
+import { isProbeCompressedError } from '../utils/errorUtils';
+import type { ImageSettingsSupport, ImageSupport, BoardInfo, ImageInfo, BlockDevice, DownloadProgress, FlashProgress, CustomImageInfo, CustomImageClassification, ArmbianReleaseInfo, CachedImageInfo, CacheBreakdown, QdlDevice, VendorInfo, AutoconfigConfig, DevScenario, DevScenariosStatus, DevTestImage, SshKeyLookup, SshKeySource } from '../types';
 
 export async function getBoards(): Promise<BoardInfo[]> {
   return invoke('get_boards');
@@ -184,10 +185,42 @@ export async function checkConnectivity(): Promise<boolean> {
 }
 
 // ============================================================================
+// First-boot settings
+// ============================================================================
+
+/** SHA-512 crypt of a password, so the plain text goes no further than this call */
+export async function hashPassword(plain: string): Promise<string> {
+  return invoke('hash_password', { plain });
+}
+
+/** The WPA2 key of a network; a 64-hex value already is one */
+export async function deriveWifiPsk(ssid: string, passphrase: string): Promise<string> {
+  return invoke('derive_wifi_psk', { ssid, passphrase });
+}
+
+async function probeCustomImage(path: string): Promise<ImageSupport> {
+  return invoke('probe_custom_image', { path });
+}
+
+/** Whether settings can go onto a local image. A compressed one is answered after unpacking. */
+export async function checkImageSettings(path: string): Promise<ImageSettingsSupport> {
+  try {
+    return await probeCustomImage(path);
+  } catch (error) {
+    return { kind: isProbeCompressedError(error) ? 'deferred' : 'unreadable' };
+  }
+}
+
+// ============================================================================
 // SSH keys
 // ============================================================================
 
-/** Fetch the public keys behind a profile's key source; rejects with an [SSH_KEYS_*] code */
+/** `authorized_keys` lines of a key source, fetched on this computer; rejects with an [SSH_KEYS_*] code */
+export async function fetchSshKeys(source: SshKeySource, value: string): Promise<string> {
+  return invoke('fetch_ssh_keys', { source, value });
+}
+
+/** Look up the public keys behind a key source, for the hint under the field; rejects with an [SSH_KEYS_*] code */
 export async function lookupSshKeys(source: SshKeySource, value: string): Promise<SshKeyLookup> {
   return invoke('lookup_ssh_keys', { source, value });
 }

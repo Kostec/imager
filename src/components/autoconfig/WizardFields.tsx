@@ -60,6 +60,26 @@ export function WizardTextField({ id, value, onChange, icon, mono, placeholder, 
   );
 }
 
+export function WizardToggle({ label, hint, checked, onChange }: {
+  label: string;
+  hint?: ReactNode;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <div className="pw-toggle">
+      <label className="pw-toggle__row">
+        <span className="pw-toggle__label">{label}</span>
+        <span className="toggle-switch">
+          <input type="checkbox" role="switch" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+          <span className="toggle-slider" aria-hidden="true" />
+        </span>
+      </label>
+      {hint && <div className="pw-field__hint">{hint}</div>}
+    </div>
+  );
+}
+
 export function WizardMore({ label, open, onToggle }: { label: string; open: boolean; onToggle: () => void }) {
   return (
     <button type="button" className={`pw-more${open ? ' is-open' : ''}`} aria-expanded={open} onClick={onToggle}>

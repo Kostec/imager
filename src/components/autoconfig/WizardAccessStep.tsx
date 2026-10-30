@@ -2,42 +2,58 @@
 // Copyright (c) 2026 Daniele Briguglio, superkali@armbian.com
 
 import { useTranslation } from 'react-i18next';
-import { Github, Gitlab, KeyRound, Link2, Lock } from 'lucide-react';
-import { AUTOCONFIG_PLACEHOLDERS, SSH_KEY_FORGES, type SshKeySource } from '../../config/autoconfig';
-import { keySourceError, type AccessMode } from '../../config/profileEditorModel';
+import { Github, Gitlab, Link2, Power, PowerOff } from 'lucide-react';
+import { AUTOCONFIG_PLACEHOLDERS, SSH_KEY_FORGES, countAuthorizedKeys, type SshKeySource } from '../../config/autoconfig';
+import { accessError, type SshChoice } from '../../config/profileEditorModel';
 import type { ProfileWizardState } from '../../hooks/useProfileWizard';
 import { SegmentedControl } from '../settings/controls';
-import { KeyCheckHint } from '../settings/editor/AccessGroup';
-import { FieldHint } from '../settings/editor/EditorParts';
+import { KeyImportControl, KeyImportHint } from '../settings/editor/AccessGroup';
+import { FieldHint, TextArea } from '../settings/editor/EditorParts';
+import { useKeyImport } from '../settings/editor/useKeyImport';
 import { PasswordInput } from '../shared/PasswordInput';
-import { WizardField, WizardMore, WizardTextField } from './WizardFields';
-
-const FORGE_ICON = { github: Github, gitlab: Gitlab } as const;
+import { WizardField, WizardMore, WizardToggle } from './WizardFields';
 
 export function WizardAccessStep({ wizard, uid }: { wizard: ProfileWizardState; uid: string }) {
   const { t } = useTranslation();
-  const { model, more, attempted, keyCheck, patch, toggleMore } = wizard;
+  const { model, more, keyCheck, patch, toggleMore } = wizard;
   const a = model.access;
   const forge = a.source === 'link' ? null : SSH_KEY_FORGES[a.source];
-  const ForgeIcon = a.source === 'link' ? Link2 : FORGE_ICON[a.source];
-  const value = forge ? a.keyUser : a.keyLink;
-  const inputError = keySourceError(a);
-  // An empty field only complains once Next was pressed; a malformed one complains as you type, as in the editor.
-  const showError = !!inputError && (attempted || !!value.trim());
+  const on = a.apply && a.enabled;
+  const error = accessError(a);
+  const keysError = error === 'editor.keysInvalid' || error === 'editor.keysNotImported' ? error : null;
+  const importer = useKeyImport(a, (value) => patch('access', value));
 
   return (
     <>
-      <SegmentedControl<AccessMode>
-        value={a.mode}
+      <SegmentedControl<SshChoice>
+        value={a.apply ? (a.enabled ? 'on' : 'off') : null}
         ariaLabel={t('settings.autoconfig.wizard.access.title')}
         options={[
-          { value: 'keys', label: t('settings.autoconfig.wizard.access.keys'), icon: <KeyRound aria-hidden="true" /> },
-          { value: 'password', label: t('settings.autoconfig.wizard.access.passwordOnly'), icon: <Lock aria-hidden="true" /> },
+          { value: 'on', label: t('settings.autoconfig.editor.sshOn'), icon: <Power aria-hidden="true" /> },
+          { value: 'off', label: t('settings.autoconfig.editor.sshOff'), icon: <PowerOff aria-hidden="true" /> },
         ]}
-        onChange={(mode) => patch('access', { mode })}
+        onChange={(choice) => patch('access', { apply: true, enabled: choice === 'on' })}
       />
-      {a.mode === 'keys' ? (
+      {!a.apply && <p className="pw-line">{t('settings.autoconfig.editor.sshKeepHint')}</p>}
+      {a.apply && !a.enabled && <p className="pw-line">{t('settings.autoconfig.editor.sshOffHint')}</p>}
+      {on && (
         <>
+          <WizardToggle
+            label={t('settings.autoconfig.editor.sshPasswordAuth')}
+            hint={error === 'editor.sshNoWayIn' ? <FieldHint tone="warn">{t(`settings.autoconfig.${error}`)}</FieldHint> : undefined}
+            checked={a.passwordAuth}
+            onChange={(passwordAuth) => patch('access', { passwordAuth })}
+          />
+          <WizardToggle
+            label={t('settings.autoconfig.editor.sshRootLogin')}
+            hint={
+              !a.rootLogin && model.user.mode === 'later' ? (
+                <FieldHint tone="warn">{t('settings.autoconfig.editor.sshRootNoUser')}</FieldHint>
+              ) : undefined
+            }
+            checked={a.rootLogin}
+            onChange={(rootLogin) => patch('access', { rootLogin })}
+          />
           <WizardField label={t('settings.autoconfig.editor.keysFrom')}>
             <SegmentedControl<SshKeySource>
               value={a.source}
@@ -53,29 +69,31 @@ export function WizardAccessStep({ wizard, uid }: { wizard: ProfileWizardState; 
           <WizardField
             label={forge ? t('settings.autoconfig.wizard.access.forgeUser', { forge: forge.label }) : t('settings.autoconfig.wizard.access.linkLabel')}
             htmlFor={`${uid}-keys`}
+            hint={<KeyImportHint access={a} check={keyCheck} importer={importer} />}
+          >
+            <KeyImportControl id={`${uid}-keys`} access={a} importer={importer} onChange={(value) => patch('access', value)} />
+          </WizardField>
+          <WizardField
+            label={t('settings.autoconfig.editor.sshKeys')}
+            htmlFor={`${uid}-keytext`}
             hint={
-              showError && inputError ? (
-                <FieldHint tone="warn">{t(`settings.autoconfig.${inputError}`)}</FieldHint>
-              ) : keyCheck.status !== 'idle' ? (
-                <KeyCheckHint check={keyCheck} forge={forge?.label ?? null} />
-              ) : forge ? undefined : (
-                <FieldHint>{t('settings.autoconfig.wizard.access.linkHint')}</FieldHint>
+              keysError ? (
+                <FieldHint tone="warn">{t(`settings.autoconfig.${keysError}`)}</FieldHint>
+              ) : (
+                <FieldHint>{t('settings.autoconfig.editor.sshKeysHint', { count: countAuthorizedKeys(a.keys) })}</FieldHint>
               )
             }
           >
-            <WizardTextField
-              id={`${uid}-keys`}
-              mono={!forge}
-              value={value}
-              icon={<ForgeIcon size={15} className="pe-input__icon" aria-hidden="true" />}
-              placeholder={forge ? AUTOCONFIG_PLACEHOLDERS.USER_NAME : AUTOCONFIG_PLACEHOLDERS.SSH_KEYS_URL}
-              invalid={showError}
-              onChange={(next) => patch('access', forge ? { keyUser: next } : { keyLink: next })}
+            <TextArea
+              id={`${uid}-keytext`}
+              rows={3}
+              value={a.keys}
+              placeholder={AUTOCONFIG_PLACEHOLDERS.SSH_KEYS}
+              invalid={error === 'editor.keysInvalid'}
+              onChange={(keys) => patch('access', { keys })}
             />
           </WizardField>
         </>
-      ) : (
-        <p className="pw-line">{t('settings.autoconfig.wizard.access.passwordLine')}</p>
       )}
       <WizardMore label={t('settings.autoconfig.rootPassword')} open={!!more.access} onToggle={() => toggleMore('access')} />
       {more.access && (
@@ -86,9 +104,9 @@ export function WizardAccessStep({ wizard, uid }: { wizard: ProfileWizardState; 
         >
           <PasswordInput
             id={`${uid}-root`}
-            value={a.rootPassword}
+            value={model.secrets.rootPassword}
             placeholder={t('settings.autoconfig.editor.rootPlaceholder')}
-            onChange={(rootPassword) => patch('access', { rootPassword })}
+            onChange={(rootPassword) => patch('secrets', { rootPassword })}
           />
         </WizardField>
       )}

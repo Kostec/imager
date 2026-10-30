@@ -2,14 +2,14 @@
 // Copyright (c) 2026 Daniele Briguglio, superkali@armbian.com
 
 import { Trans, useTranslation } from 'react-i18next';
-import { Cable, Globe, KeyRound, User, Wifi } from 'lucide-react';
+import { Cable, Cpu, Globe, KeyRound, User, Wifi } from 'lucide-react';
 import { UI } from '../../config';
 import { profileScopeLabel } from '../../config/profileEditorModel';
 import { WIZARD_DEFAULT_KEY, WIZARD_ITEMS, WIZARD_STEPS, wizardItemFact, type WizardItem } from '../../config/profileWizard';
 import type { ProfileWizardState } from '../../hooks/useProfileWizard';
 import { BoardImage } from '../shared/BoardImage';
 
-const ITEM_ICON = { network: Wifi, user: User, locale: Globe, access: KeyRound } as const;
+const ITEM_ICON = { network: Wifi, user: User, locale: Globe, access: KeyRound, device: Cpu } as const;
 
 /** The glyph of a wizard item, shared by the side column and the review */
 export function WizardItemIcon({ item, cable }: { item: WizardItem; cable: boolean }) {
@@ -46,8 +46,7 @@ export function WizardSide({ wizard, boardImage }: WizardSideProps) {
           const at = WIZARD_STEPS.indexOf(item);
           // Steps already passed keep their summary when Edit on the review jumps back.
           const fact = wizardItemFact(item, facts);
-          // A set step Armbian will not apply (the region without a user) reads like a skipped one.
-          const passed = skipped[item] || fact.tone === 'off' ? 'skip' : 'done';
+          const passed = skipped[item] ? 'skip' : 'done';
           const state = stepIndex === at ? 'cur' : furthest > at ? passed : '';
           return (
             <li key={item} className={`pw-item${state ? ` is-${state}` : ''}`} aria-current={state === 'cur' ? 'step' : undefined}>

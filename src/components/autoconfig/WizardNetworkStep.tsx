@@ -4,15 +4,15 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Cable, Globe, Network, Wifi } from 'lucide-react';
-import { AUTOCONFIG_PLACEHOLDERS, WIFI_COUNTRY_CODES, isWifiKeyLength } from '../../config/autoconfig';
-import { countryName, hasWifi, type IpMode, type NetMode } from '../../config/profileEditorModel';
+import { AUTOCONFIG_PLACEHOLDERS, WIFI_COUNTRY_CODES } from '../../config/autoconfig';
+import { countryName, hasWifi, ssidError, type IpMode, type NetMode } from '../../config/profileEditorModel';
 import type { ProfileWizardState } from '../../hooks/useProfileWizard';
 import type { StaticIpErrors } from '../../utils';
-import type { TFn } from '../../utils/errorUtils';
 import { SegmentedControl, SelectMenu, type SelectOption } from '../settings/controls';
 import { CountryFlag, FieldHint } from '../settings/editor/EditorParts';
+import { WifiKeyHint } from '../settings/editor/NetworkGroup';
 import { PasswordInput } from '../shared/PasswordInput';
-import { WizardField, WizardMore, WizardTextField } from './WizardFields';
+import { WizardField, WizardMore, WizardTextField, WizardToggle } from './WizardFields';
 
 const IP_FIELDS: { field: keyof StaticIpErrors; key: 'address' | 'mask' | 'gateway' | 'dns'; label: string; placeholder: string }[] = [
   { field: 'ip', key: 'address', label: 'address', placeholder: AUTOCONFIG_PLACEHOLDERS.STATIC_IP },
@@ -21,21 +21,14 @@ const IP_FIELDS: { field: keyof StaticIpErrors; key: 'address' | 'mask' | 'gatew
   { field: 'dns', key: 'dns', label: 'dns', placeholder: AUTOCONFIG_PLACEHOLDERS.STATIC_DNS },
 ];
 
-function wifiKeyHint(key: string, t: TFn) {
-  if (!key) return <FieldHint>{t('settings.autoconfig.editor.wifiKeyEmpty')}</FieldHint>;
-  return isWifiKeyLength(key) ? (
-    <FieldHint tone="ok">{t('settings.autoconfig.wifiKeyFits')}</FieldHint>
-  ) : (
-    <FieldHint tone="warn">{t('settings.autoconfig.wifiKeyLength')}</FieldHint>
-  );
-}
-
 export function WizardNetworkStep({ wizard, uid }: { wizard: ProfileWizardState; uid: string }) {
   const { t, i18n } = useTranslation();
   const { model, more, attempted, stepError, ipErrors, patch, toggleMore } = wizard;
+  const countryMissing = attempted && stepError === 'settings.autoconfig.editor.countryRequired';
   const n = model.network;
   const wifi = hasWifi(n.mode);
-  const ssidMissing = attempted && stepError === 'settings.autoconfig.wizard.ssidRequired';
+  const ssidProblem = ssidError(n);
+  const ssidShown = (attempted || !!n.ssid.trim()) && ssidProblem;
   const addressMissing = attempted && stepError === 'settings.autoconfig.wizard.addressRequired';
   const ipMessages = [
     addressMissing && t('settings.autoconfig.wizard.addressRequired'),
@@ -74,20 +67,29 @@ export function WizardNetworkStep({ wizard, uid }: { wizard: ProfileWizardState;
           <WizardField
             label={t('settings.autoconfig.wizard.network.ssid')}
             htmlFor={`${uid}-ssid`}
-            hint={ssidMissing ? <FieldHint tone="warn">{t('settings.autoconfig.wizard.ssidRequired')}</FieldHint> : undefined}
+            hint={ssidShown ? <FieldHint tone="warn">{t(`settings.autoconfig.${ssidShown}`)}</FieldHint> : undefined}
           >
             <WizardTextField
               id={`${uid}-ssid`}
               value={n.ssid}
               icon={<Wifi size={15} className="pe-input__icon" aria-hidden="true" />}
               placeholder={AUTOCONFIG_PLACEHOLDERS.WIFI_SSID}
-              invalid={ssidMissing}
+              invalid={!!ssidShown}
               onChange={(ssid) => patch('network', { ssid })}
             />
           </WizardField>
-          <WizardField label={t('settings.autoconfig.wizard.password')} htmlFor={`${uid}-key`} hint={wifiKeyHint(n.key, t)}>
-            <PasswordInput id={`${uid}-key`} value={n.key} onChange={(key) => patch('network', { key })} />
+          <WizardField
+            label={t('settings.autoconfig.wizard.password')}
+            htmlFor={`${uid}-key`}
+            hint={<WifiKeyHint form={model} onForget={() => patch('network', { psk: '', pskSsid: '' })} />}
+          >
+            <PasswordInput id={`${uid}-key`} value={model.secrets.wifiKey} onChange={(wifiKey) => patch('secrets', { wifiKey })} />
           </WizardField>
+          <WizardToggle
+            label={t('settings.autoconfig.editor.wifiHidden')}
+            checked={n.hidden}
+            onChange={(hidden) => patch('network', { hidden })}
+          />
         </div>
       ) : (
         <p className="pw-line">{t('settings.autoconfig.wizard.network.cableLine')}</p>
@@ -102,7 +104,10 @@ export function WizardNetworkStep({ wizard, uid }: { wizard: ProfileWizardState;
       {n.apply && more.network && (
         <div className="pw-two">
           {wifi && (
-            <WizardField label={t('settings.autoconfig.wizard.network.country')}>
+            <WizardField
+              label={t('settings.autoconfig.wizard.network.country')}
+              hint={countryMissing ? <FieldHint tone="warn">{t('settings.autoconfig.editor.countryRequired')}</FieldHint> : undefined}
+            >
               <SelectMenu
                 value={n.country}
                 options={countries}

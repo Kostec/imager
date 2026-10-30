@@ -4,7 +4,7 @@
 import { useId, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { ArrowRight, Cable, Check, Globe, Info, KeyRound, Tag, User, Wifi, X } from 'lucide-react';
+import { ArrowRight, Cable, Check, Cpu, Globe, Info, KeyRound, Tag, User, Wifi, X } from 'lucide-react';
 import { UI } from '../../config';
 import { isWizardItem } from '../../config/profileWizard';
 import { useDialogFocus } from '../../hooks/useDialogFocus';
@@ -13,6 +13,7 @@ import { useProfileWizard, type ProfileWizardState } from '../../hooks/useProfil
 import { FieldHint } from '../settings/editor/EditorParts';
 import type { AutoconfigProfile, ProfileBoard } from '../../types';
 import { WizardAccessStep } from './WizardAccessStep';
+import { WizardDeviceStep } from './WizardDeviceStep';
 import { WizardLocaleStep } from './WizardLocaleStep';
 import { WizardNameStep } from './WizardNameStep';
 import { WizardNetworkStep } from './WizardNetworkStep';
@@ -20,7 +21,7 @@ import { WizardReviewStep } from './WizardReviewStep';
 import { WizardSide } from './WizardSide';
 import { WizardUserStep } from './WizardUserStep';
 
-const STEP_ICON = { name: Tag, network: Wifi, user: User, locale: Globe, access: KeyRound, review: Check } as const;
+const STEP_ICON = { name: Tag, network: Wifi, user: User, locale: Globe, access: KeyRound, device: Cpu, review: Check } as const;
 
 interface ProfileWizardProps {
   /** The board picked in the flash flow, offered as the profile's scope; null from Settings */
@@ -45,6 +46,8 @@ function WizardStepBody({ wizard, uid, board }: { wizard: ProfileWizardState; ui
       return <WizardLocaleStep wizard={wizard} />;
     case 'access':
       return <WizardAccessStep wizard={wizard} uid={uid} />;
+    case 'device':
+      return <WizardDeviceStep wizard={wizard} uid={uid} />;
     case 'review':
       return <WizardReviewStep wizard={wizard} />;
   }

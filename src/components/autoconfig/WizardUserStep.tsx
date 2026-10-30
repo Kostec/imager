@@ -4,7 +4,7 @@
 import { useTranslation } from 'react-i18next';
 import { IdCard, Monitor, Terminal, User } from 'lucide-react';
 import { AUTOCONFIG_PLACEHOLDERS, USER_SHELLS } from '../../config/autoconfig';
-import { firstLoginUserName, isValidUserName, type UserMode } from '../../config/profileEditorModel';
+import { isValidUserName, type UserMode } from '../../config/profileEditorModel';
 import type { ProfileWizardState } from '../../hooks/useProfileWizard';
 import type { UserShell } from '../../types';
 import { SegmentedControl, SelectMenu } from '../settings/controls';
@@ -17,20 +17,15 @@ export function WizardUserStep({ wizard, uid }: { wizard: ProfileWizardState; ui
   const { model, more, attempted, patch, toggleMore } = wizard;
   const user = model.user;
   const named = !!user.name.trim();
-  const createdName = firstLoginUserName(user.name);
 
   const nameHint = !named ? (
     attempted ? <FieldHint tone="warn">{t('settings.autoconfig.wizard.usernameRequired')}</FieldHint> : undefined
   ) : isValidUserName(user.name) ? (
-    <FieldHint tone="ok">
-      {createdName === user.name.trim()
-        ? t('settings.autoconfig.editor.userOk')
-        : t('settings.autoconfig.editor.userCreatedAs', { name: createdName })}
-    </FieldHint>
+    <FieldHint tone="ok">{t('settings.autoconfig.editor.userOk')}</FieldHint>
   ) : (
     <FieldHint tone="warn">{t('settings.autoconfig.editor.userInvalid')}</FieldHint>
   );
-  const passwordMissing = attempted && !user.password;
+  const passwordMissing = attempted && !model.secrets.userPassword;
 
   return (
     <>
@@ -62,7 +57,11 @@ export function WizardUserStep({ wizard, uid }: { wizard: ProfileWizardState; ui
               htmlFor={`${uid}-upw`}
               hint={passwordMissing ? <FieldHint tone="warn">{t('settings.autoconfig.editor.passwordRequired')}</FieldHint> : undefined}
             >
-              <PasswordInput id={`${uid}-upw`} value={user.password} onChange={(password) => patch('user', { password })} />
+              <PasswordInput
+                id={`${uid}-upw`}
+                value={model.secrets.userPassword}
+                onChange={(userPassword) => patch('secrets', { userPassword })}
+              />
             </WizardField>
           </div>
           <WizardMore label={t('settings.autoconfig.wizard.user.more')} open={!!more.user} onToggle={() => toggleMore('user')} />

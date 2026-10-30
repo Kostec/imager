@@ -3,26 +3,25 @@
 
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { keyLookupSource, localeForLanguage, presetIsEmpty } from '../config/autoconfig';
-import { editorIpErrors, keySourceError, type EditorModel, type MoreKey } from '../config/profileEditorModel';
+import { keyLookupSource, localeForLanguage } from '../config/autoconfig';
+import { editorIpErrors, isFormEmpty, keySourceFormatError, sealEditorForm, type EditorForm, type MoreKey } from '../config/profileEditorModel';
 import {
-  WIZARD_STEPS, emptyWizardModel, isWizardItem, wizardFacts, wizardProfile, wizardStepBlocked, wizardStepError,
+  WIZARD_STEPS, emptyWizardModel, isWizardItem, wizardFacts, wizardModel, wizardProfile, wizardStepBlocked, wizardStepError,
   type WizardSkips,
 } from '../config/profileWizard';
 import type { AutoconfigProfile, ProfileBoard } from '../types';
-import { isSshKeysSourceError } from '../utils/errorUtils';
 import { upsertAutoconfigProfile } from './useSettings';
 import { useSshKeyCheck } from './useSshKeyCheck';
-import { logWarn } from './useTauri';
+import { deriveWifiPsk, hashPassword, logWarn } from './useTauri';
 import { useToasts } from './useToasts';
 
-type ModelPart = 'network' | 'user' | 'region' | 'access';
+type ModelPart = 'network' | 'user' | 'region' | 'access' | 'device' | 'secrets';
 
 export function useProfileWizard(board: ProfileBoard | null, onSaved: (profile: AutoconfigProfile) => void) {
   const { t, i18n } = useTranslation();
   const { showSuccess, showError } = useToasts();
 
-  const [model, setModel] = useState<EditorModel>(() =>
+  const [model, setModel] = useState<EditorForm>(() =>
     emptyWizardModel(
       { timezone: Intl.DateTimeFormat().resolvedOptions().timeZone ?? '', locale: localeForLanguage(i18n.language) },
       board
@@ -38,25 +37,20 @@ export function useProfileWizard(board: ProfileBoard | null, onSaved: (profile: 
   const step = WIZARD_STEPS[stepIndex];
   const stepError = wizardStepError(step, model);
   const blocked = wizardStepBlocked(step, model);
-  // Every area left at Armbian's defaults: nothing to write, so it cannot be created
-  const empty = useMemo(() => presetIsEmpty(wizardProfile(model, skipped).config), [model, skipped]);
+  // Every area left at the image's defaults: nothing to write, so it cannot be created
+  const empty = useMemo(() => isFormEmpty(wizardModel(model, skipped)), [model, skipped]);
   const ipErrors = editorIpErrors(model.network);
 
   const access = model.access;
   const keyCheck = useSshKeyCheck(
     keyLookupSource(access.source),
     access.source === 'link' ? access.keyLink : access.keyUser,
-    access.mode === 'keys' && keySourceError(access) === null
+    access.apply && access.enabled && keySourceFormatError(access) === null
   );
-  const keyProblem = keyCheck.status === 'failed' && isSshKeysSourceError(keyCheck.error);
-  const keyCount = keyCheck.status === 'found' ? keyCheck.lookup.total : null;
-  const facts = useMemo(
-    () => wizardFacts(model, skipped, keyCount, keyProblem, t),
-    [model, skipped, keyCount, keyProblem, t]
-  );
+  const facts = useMemo(() => wizardFacts(model, skipped, t), [model, skipped, t]);
 
-  const set = (value: Partial<EditorModel>) => setModel((m) => ({ ...m, ...value }));
-  const patch = <K extends ModelPart>(key: K, value: Partial<EditorModel[K]>) =>
+  const set = (value: Partial<EditorForm>) => setModel((m) => ({ ...m, ...value }));
+  const patch = <K extends ModelPart>(key: K, value: Partial<EditorForm[K]>) =>
     setModel((m) => ({ ...m, [key]: { ...m[key], ...value } }));
   const toggleMore = (key: MoreKey) => setMore((m) => ({ ...m, [key]: !m[key] }));
 
@@ -69,8 +63,8 @@ export function useProfileWizard(board: ProfileBoard | null, onSaved: (profile: 
   function next() {
     if (blocked) {
       setAttempted(true);
-      // The Fixed IP fields sit under "more": open it so the reason Next refused is in view.
-      if (step === 'network' && model.network.ip === 'fixed') setMore((m) => ({ ...m, network: true }));
+      // The country and the Fixed IP fields sit under "more": open it so the reason Next refused is in view.
+      if (step === 'network') setMore((m) => ({ ...m, network: true }));
       return;
     }
     if (isWizardItem(step)) setSkipped((s) => ({ ...s, [step]: false }));
@@ -85,8 +79,9 @@ export function useProfileWizard(board: ProfileBoard | null, onSaved: (profile: 
   async function create() {
     if (!model.name.trim() || saving || empty) return;
     setSaving(true);
-    const profile: AutoconfigProfile = { id: crypto.randomUUID(), updatedAt: Date.now(), ...wizardProfile(model, skipped) };
     try {
+      const sealed = await sealEditorForm(wizardModel(model, skipped), { hashPassword, deriveWifiPsk });
+      const profile: AutoconfigProfile = { id: crypto.randomUUID(), updatedAt: Date.now(), ...wizardProfile(sealed) };
       await upsertAutoconfigProfile(profile);
       showSuccess(t('settings.autoconfig.toastCreated'));
       onSaved(profile);

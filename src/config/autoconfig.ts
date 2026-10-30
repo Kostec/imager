@@ -4,11 +4,13 @@
 import type {
   AutoconfigConfig,
   AutoconfigProfile,
+  ImageSettingsSupport,
   ProfileBoard,
   SshKeySource as KeyLookupSource,
   UserShell,
 } from '../types';
 import { staticIpErrors, trimmedOrUndefined, type StaticIpErrors } from '../utils';
+import type { TFn } from '../utils/errorUtils';
 import { AUTOCONFIG } from './constants';
 
 /** Example values shown as input placeholders in the profile editor */
@@ -19,10 +21,20 @@ export const AUTOCONFIG_PLACEHOLDERS = {
   STATIC_GATEWAY: '192.168.1.1',
   STATIC_DNS: '8.8.8.8, 1.1.1.1',
   SSH_KEYS_URL: 'https://github.com/username.keys',
-  USER_NAME: 'armbian',
-  USER_REAL_NAME: 'Armbian User',
-  REMOTE_CONFIG_URL: 'https://example.com/config.txt',
+  USER_NAME: 'wukong',
+  USER_REAL_NAME: 'Wukong User',
+  HOSTNAME: AUTOCONFIG.HOSTNAME_PROPOSED,
+  SSH_KEYS: 'ssh-ed25519 AAAA... you@laptop',
+  USER_SCRIPT: '#!/bin/bash\napt-get install -y htop',
 } as const;
+
+/** Offered as checkboxes; the board's own `usbhost2 usbhost3` stay on whatever is picked here */
+export const BOARD_OVERLAYS: readonly string[] = ['i2c0', 'i2c1', 'spi-spidev', 'uart1', 'uart2', 'uart3'];
+
+/** Console keyboard layouts (XKB names) */
+export const KEYBOARD_LAYOUTS: readonly string[] = [
+  'us', 'gb', 'de', 'fr', 'es', 'it', 'pt', 'br', 'nl', 'se', 'no', 'dk', 'fi', 'pl', 'cz', 'hu', 'ro', 'gr', 'tr', 'ru', 'ua', 'jp', 'kr',
+];
 
 /** Login shells offered for the first user. */
 export const USER_SHELLS: readonly UserShell[] = ['bash', 'zsh'];
@@ -121,55 +133,105 @@ export function localeForLanguage(language: string): string {
   return exact || COMMON_LOCALES.find((l) => l.startsWith(`${lang}_`)) || '';
 }
 
-/** Whether a Wi-Fi key has a WPA passphrase length; purely visual, nothing is blocked on it. */
-export function isWifiKeyLength(key: string): boolean {
-  return key.length >= AUTOCONFIG.WIFI_KEY_MIN && key.length <= AUTOCONFIG.WIFI_KEY_MAX;
+const byteLength = (text: string) => new TextEncoder().encode(text).length;
+
+/** 8 to 63 ASCII characters, or a ready 64-hex key. */
+export function isWifiKeyValid(key: string): boolean {
+  if (/^[0-9a-fA-F]{64}$/.test(key)) return true;
+  return key.length >= AUTOCONFIG.WIFI_KEY_MIN && key.length <= AUTOCONFIG.WIFI_KEY_MAX && /^[\x20-\x7e]*$/.test(key);
+}
+
+export const isSsidTooLong = (ssid: string) => byteLength(ssid) > AUTOCONFIG.SSID_MAX_BYTES;
+
+export const isUserScriptTooLarge = (script: string) => byteLength(script) > AUTOCONFIG.USER_SCRIPT_MAX_BYTES;
+
+/** RFC 1123, as `is_hostname` in src-tauri/src/provision/bundle.rs */
+export function isValidHostname(name: string): boolean {
+  if (name.length > AUTOCONFIG.HOSTNAME_MAX_BYTES) return false;
+  return name.split('.').every((label) => label.length <= AUTOCONFIG.HOSTNAME_LABEL_MAX && /^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?$/.test(label));
+}
+
+const keyLines = (text: string) => text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+
+export const countAuthorizedKeys = (text: string) => keyLines(text).length;
+
+/** Refused on the card by `check` in src-tauri/src/provision/bundle.rs: nothing there may look like a section. */
+export function areAuthorizedKeysValid(text: string): boolean {
+  // eslint-disable-next-line no-control-regex -- control characters are what this looks for
+  return keyLines(text).every((line) => !line.startsWith('[') && !/[\x00-\x1f\x7f]/.test(line));
+}
+
+export function mergeAuthorizedKeys(current: string, imported: string): string {
+  return [...new Set([...keyLines(current), ...keyLines(imported)])].join('\n');
 }
 
 export type ProfileGlyph = 'wifi' | 'cable' | 'user' | 'timezone' | 'keys';
 
 export function profileGlyphs(c: AutoconfigConfig): ProfileGlyph[] {
   const glyphs: ProfileGlyph[] = [];
-  if (c.applyNetwork) {
-    if (c.wifiEnabled) glyphs.push('wifi');
-    else if (c.ethernetEnabled) glyphs.push('cable');
-  }
+  if (c.wifiEnabled) glyphs.push('wifi');
+  else if (c.ethernetEnabled) glyphs.push('cable');
   if (c.userName?.trim()) glyphs.push('user');
-  if (c.timezone || c.langBasedOnLocation) glyphs.push('timezone');
-  if (c.userKeyUrl || c.rootKeyUrl) glyphs.push('keys');
+  if (c.timezone || c.locale) glyphs.push('timezone');
+  if (c.sshAuthorizedKeys?.trim()) glyphs.push('keys');
   return glyphs;
 }
 
-// Twin of render_preset in src-tauri/src/autoconfig.rs: true when it would write nothing.
+// Twin of provision::is_empty: true when nothing would be applied and the image goes out byte for byte.
 export function presetIsEmpty(c: AutoconfigConfig): boolean {
-  const verbatim = (v?: string | null) => !!v;
-  const trimmed = (v?: string | null) => !!v?.trim();
+  const set = (v?: string | null) => !!v?.trim();
+  const flag = (v?: boolean | null) => v !== undefined && v !== null;
   return !(
-    c.applyNetwork === true ||
-    trimmed(c.locale) ||
-    trimmed(c.timezone) ||
-    typeof c.langBasedOnLocation === 'boolean' ||
-    verbatim(c.rootPassword) ||
-    trimmed(c.rootKeyUrl) ||
-    trimmed(c.userName) ||
-    verbatim(c.userPassword) ||
-    trimmed(c.userKeyUrl) ||
+    c.wifiEnabled === true ||
+    c.useStaticIp === true ||
+    set(c.hostname) ||
+    set(c.timezone) ||
+    set(c.locale) ||
+    set(c.keyboardLayout) ||
+    set(c.userName) ||
+    set(c.userRealName) ||
+    set(c.userPasswordHash) ||
     !!c.userShell ||
-    trimmed(c.userRealName) ||
-    trimmed(c.remoteConfigUrl)
+    set(c.rootPasswordHash) ||
+    flag(c.sshEnabled) ||
+    flag(c.sshPasswordAuth) ||
+    flag(c.sshRootLogin) ||
+    set(c.sshAuthorizedKeys) ||
+    !!c.overlays?.some(set) ||
+    set(c.userScript)
   );
 }
 
-/** Where public SSH keys come from: a forge account the app turns into a URL, or any link. */
+/** root still has the image's password 1234 and the board is reachable; SSH runs unless the profile turns it off */
+export function defaultRootExposed(c: AutoconfigConfig): boolean {
+  return !c.userName?.trim() && !c.rootPasswordHash?.trim() && (c.wifiEnabled === true || c.sshEnabled !== false);
+}
+
+/** How to reach the board after the first boot; null when the profile turns SSH off */
+export function sshCommand(c: AutoconfigConfig): string | null {
+  if (c.sshEnabled === false) return null;
+  const login = c.userName?.trim() || 'root';
+  const fixed = c.useStaticIp ? c.staticIp?.trim() : '';
+  return `ssh ${login}@${fixed || `${c.hostname?.trim() || AUTOCONFIG.HOSTNAME_OF_IMAGE}.local`}`;
+}
+
+export function settingsAvailable(support: ImageSettingsSupport | undefined): boolean {
+  return support?.kind === 'supported' || support?.kind === 'deferred';
+}
+
+/** Why an image takes no settings, or what happens with them; one sentence for each answer of the check */
+export function settingsSupportText(support: ImageSettingsSupport, t: TFn): string {
+  return t(`flash.settings.${support.kind}`, { reason: support.kind === 'unsupportedFs' ? support.reason : '' });
+}
+
+/** Where public SSH keys are imported from: a forge account, or any link. */
 export type SshKeySource = 'github' | 'gitlab' | 'link';
 
-/** Forge key endpoints; the board fetches <prefix><user>.keys at first boot. Labels are brand names, never translated. */
+/** Labels are brand names, never translated. */
 export const SSH_KEY_FORGES = {
   github: { label: 'GitHub', prefix: 'https://github.com/', display: 'github.com/' },
   gitlab: { label: 'GitLab', prefix: 'https://gitlab.com/', display: 'gitlab.com/' },
 } as const;
-
-const SSH_KEYS_SUFFIX = '.keys';
 
 const KEY_USER_PATTERN: Record<keyof typeof SSH_KEY_FORGES, RegExp> = {
   github: /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/,
@@ -178,21 +240,6 @@ const KEY_USER_PATTERN: Record<keyof typeof SSH_KEY_FORGES, RegExp> = {
 
 export function isValidKeyUser(forge: keyof typeof SSH_KEY_FORGES, user: string): boolean {
   return KEY_USER_PATTERN[forge].test(user.trim());
-}
-
-export function forgeKeysUrl(forge: keyof typeof SSH_KEY_FORGES, user: string): string {
-  return `${SSH_KEY_FORGES[forge].prefix}${user.trim()}${SSH_KEYS_SUFFIX}`;
-}
-
-/** Inverse of forgeKeysUrl: the forge and a valid user, or null for any other link. */
-export function parseForgeKeysUrl(url: string): { forge: keyof typeof SSH_KEY_FORGES; user: string } | null {
-  for (const forge of Object.keys(SSH_KEY_FORGES) as (keyof typeof SSH_KEY_FORGES)[]) {
-    const prefix = SSH_KEY_FORGES[forge].prefix;
-    if (!url.startsWith(prefix) || !url.endsWith(SSH_KEYS_SUFFIX)) continue;
-    const user = url.slice(prefix.length, url.length - SSH_KEYS_SUFFIX.length);
-    if (isValidKeyUser(forge, user)) return { forge, user };
-  }
-  return null;
 }
 
 export function keyLookupSource(source: SshKeySource): KeyLookupSource {

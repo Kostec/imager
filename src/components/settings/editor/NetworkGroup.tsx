@@ -4,19 +4,22 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Cable, Network, Wifi } from 'lucide-react';
-import { AUTOCONFIG_PLACEHOLDERS, WIFI_COUNTRY_CODES, isWifiKeyLength } from '../../../config/autoconfig';
+import { AUTOCONFIG_PLACEHOLDERS, WIFI_COUNTRY_CODES } from '../../../config/autoconfig';
 import {
   PROFILE_EDITOR,
   countryName,
   editorIpErrors,
   hasWifi,
+  ssidError,
+  wifiKeyError,
+  type EditorForm,
   type IpMode,
   type NetMode,
 } from '../../../config/profileEditorModel';
 import type { StaticIpErrors } from '../../../utils';
 import { PasswordInput } from '../../shared/PasswordInput';
-import { SegmentedControl, SelectMenu, SettingsRow, type SelectOption } from '../controls';
-import { CountryFlag, DefaultsAction, EditorSection, FieldHint, MoreRow, TextField } from './EditorParts';
+import { SegmentedControl, SelectMenu, SettingsRow, ToggleRow, type SelectOption } from '../controls';
+import { CountryFlag, DefaultsAction, EditorSection, FieldHint, MoreRow, SavedSecretHint, TextField } from './EditorParts';
 import { fieldId, type FoldingGroupProps } from './types';
 
 const IP_FIELDS: { field: keyof StaticIpErrors; key: 'address' | 'mask' | 'gateway' | 'dns'; label: string; placeholder: string }[] = [
@@ -25,6 +28,16 @@ const IP_FIELDS: { field: keyof StaticIpErrors; key: 'address' | 'mask' | 'gatew
   { field: 'gateway', key: 'gateway', label: 'gateway', placeholder: AUTOCONFIG_PLACEHOLDERS.STATIC_GATEWAY },
   { field: 'dns', key: 'dns', label: 'dns', placeholder: AUTOCONFIG_PLACEHOLDERS.STATIC_DNS },
 ];
+
+/** The state of the Wi-Fi password field; shared with the wizard */
+export function WifiKeyHint({ form, onForget }: { form: EditorForm; onForget: () => void }) {
+  const { t } = useTranslation();
+  const error = wifiKeyError(form);
+  if (error) return <FieldHint tone="warn">{t(`settings.autoconfig.${error}`)}</FieldHint>;
+  if (form.secrets.wifiKey) return <FieldHint tone="ok">{t('settings.autoconfig.wifiKeyFits')}</FieldHint>;
+  if (form.network.psk) return <SavedSecretHint text={t('settings.autoconfig.editor.secretSaved')} onForget={onForget} />;
+  return <FieldHint>{t('settings.autoconfig.editor.wifiKeyEmpty')}</FieldHint>;
+}
 
 export function NetworkGroup({ model, status, uid, patch, keepDefaults, more, toggleMore }: FoldingGroupProps) {
   const { t, i18n } = useTranslation();
@@ -47,13 +60,7 @@ export function NetworkGroup({ model, status, uid, patch, keepDefaults, more, to
     [t, i18n.language]
   );
 
-  const keyHint = !n.key ? (
-    <FieldHint>{t('settings.autoconfig.editor.wifiKeyEmpty')}</FieldHint>
-  ) : isWifiKeyLength(n.key) ? (
-    <FieldHint tone="ok">{t('settings.autoconfig.wifiKeyFits')}</FieldHint>
-  ) : (
-    <FieldHint tone="warn">{t('settings.autoconfig.wifiKeyLength')}</FieldHint>
-  );
+  const ssidProblem = ssidError(n);
 
   const summary = [
     n.ip === 'fixed'
@@ -108,15 +115,15 @@ export function NetworkGroup({ model, status, uid, patch, keepDefaults, more, to
           <SettingsRow
             label={t('settings.autoconfig.wizard.network.ssid')}
             controlId={fieldId(uid, 'ssid')}
-            tall={!n.ssid.trim()}
-            description={n.ssid.trim() ? undefined : <FieldHint tone="warn">{t('settings.autoconfig.wizard.ssidRequired')}</FieldHint>}
+            tall={!!ssidProblem}
+            description={ssidProblem ? <FieldHint tone="warn">{t(`settings.autoconfig.${ssidProblem}`)}</FieldHint> : undefined}
             control={
               <TextField
                 id={fieldId(uid, 'ssid')}
                 value={n.ssid}
                 icon={<Wifi size={16} className="pe-input__icon" aria-hidden="true" />}
                 placeholder={AUTOCONFIG_PLACEHOLDERS.WIFI_SSID}
-                invalid={!n.ssid.trim()}
+                invalid={!!ssidProblem}
                 onChange={(ssid) => patch('network', { ssid })}
               />
             }
@@ -125,8 +132,19 @@ export function NetworkGroup({ model, status, uid, patch, keepDefaults, more, to
             label={t('settings.autoconfig.wizard.password')}
             controlId={fieldId(uid, 'wifi-key')}
             tall
-            description={keyHint}
-            control={<PasswordInput id={fieldId(uid, 'wifi-key')} value={n.key} onChange={(key) => patch('network', { key })} />}
+            description={<WifiKeyHint form={model} onForget={() => patch('network', { psk: '', pskSsid: '' })} />}
+            control={
+              <PasswordInput
+                id={fieldId(uid, 'wifi-key')}
+                value={model.secrets.wifiKey}
+                onChange={(wifiKey) => patch('secrets', { wifiKey })}
+              />
+            }
+          />
+          <ToggleRow
+            label={t('settings.autoconfig.editor.wifiHidden')}
+            checked={n.hidden}
+            onChange={(hidden) => patch('network', { hidden })}
           />
         </>
       )}
@@ -144,7 +162,13 @@ export function NetworkGroup({ model, status, uid, patch, keepDefaults, more, to
           <SettingsRow
             label={t('settings.autoconfig.wizard.network.country')}
             tall
-            description={<FieldHint>{t('settings.autoconfig.editor.countryHint')}</FieldHint>}
+            description={
+              n.country.trim() ? (
+                <FieldHint>{t('settings.autoconfig.editor.countryHint')}</FieldHint>
+              ) : (
+                <FieldHint tone="warn">{t('settings.autoconfig.editor.countryRequired')}</FieldHint>
+              )
+            }
             control={
               <SelectMenu
                 value={n.country}

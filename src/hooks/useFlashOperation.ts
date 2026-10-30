@@ -20,6 +20,7 @@ import {
   deleteDecompressedCustomImage,
   forceDeleteCachedImage,
   requestWriteAuthorization,
+  checkImageSettings,
   checkNeedsDecompression,
   decompressCustomImage,
   isTargetConnected,
@@ -29,6 +30,7 @@ import {
 } from './useTauri';
 import { getSkipVerify } from './useSettings';
 import { POLLING, CACHE, STORAGE_KEYS, FLASH_PREP_STAGE, QDL_STAGE } from '../config';
+import { settingsAvailable, settingsSupportText } from '../config/autoconfig';
 import { getErrorMessage, armbianIdentityKey, isCompressedImage } from '../utils';
 import { isDeviceRefusalError, isShaUnavailableError, translateFlashError } from '../utils/errorUtils';
 
@@ -355,9 +357,23 @@ export function useFlashOperation({
     }
   }
 
+  /** Why the profile cannot go onto this unpacked image, or null; an image that cannot be read is left to the backend */
+  async function settingsRefusal(path: string): Promise<string | null> {
+    if (!autoconfigRef.current || isEdlFlash) return null;
+    const support = await checkImageSettings(path);
+    if (settingsAvailable(support) || support.kind === 'unreadable') return null;
+    return t('flash.settings.refused', { reason: settingsSupportText(support, t) });
+  }
+
   /** Start flash with progress polling */
   async function startFlash(path: string) {
     if (isAborted()) return;
+    const refusal = await settingsRefusal(path);
+    if (isAborted()) return;
+    if (refusal) {
+      failFlash(refusal);
+      return;
+    }
     const writeStage: FlashStage = isQdlMode ? 'extracting' : 'flashing';
     // The TAR path injects the profile during extraction, so only block and UFS flashes prep first.
     const awaitPrep = !isQdlMode && hasProfile;

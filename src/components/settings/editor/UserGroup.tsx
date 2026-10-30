@@ -4,7 +4,7 @@
 import { useTranslation } from 'react-i18next';
 import { Monitor, User } from 'lucide-react';
 import { AUTOCONFIG_PLACEHOLDERS, USER_SHELLS } from '../../../config/autoconfig';
-import { PROFILE_EDITOR, firstLoginUserName, isValidUserName, type UserMode } from '../../../config/profileEditorModel';
+import { PROFILE_EDITOR, isValidUserName, type UserMode } from '../../../config/profileEditorModel';
 import type { UserShell } from '../../../types';
 import { PasswordInput } from '../../shared/PasswordInput';
 import { SegmentedControl, SelectMenu, SettingsRow } from '../controls';
@@ -12,22 +12,17 @@ import { EditorSection, FieldHint, MoreRow, TextField } from './EditorParts';
 import { fieldId, type FoldingGroupProps } from './types';
 
 export function UserGroup({ model, status, uid, patch, more, toggleMore }: FoldingGroupProps) {
+  const password = model.secrets.userPassword;
   const { t } = useTranslation();
   const u = model.user;
   const subId = fieldId(uid, 'user-more');
-  const createdName = firstLoginUserName(u.name);
   const nameHint = !u.name.trim() ? (
     <FieldHint tone="warn">{t('settings.autoconfig.wizard.usernameRequired')}</FieldHint>
   ) : isValidUserName(u.name) ? (
-    <FieldHint tone="ok">
-      {createdName === u.name.trim()
-        ? t('settings.autoconfig.editor.userOk')
-        : t('settings.autoconfig.editor.userCreatedAs', { name: createdName })}
-    </FieldHint>
+    <FieldHint tone="ok">{t('settings.autoconfig.editor.userOk')}</FieldHint>
   ) : (
     <FieldHint tone="warn">{t('settings.autoconfig.editor.userInvalid')}</FieldHint>
   );
-  const fullNameNeeded = !u.realName.trim() && model.region.mode === 'choose';
   const summary = [u.realName.trim() || t('settings.autoconfig.editor.fullNameNotSet'), u.shell]
     .filter(Boolean)
     .join(PROFILE_EDITOR.SEPARATOR);
@@ -75,10 +70,20 @@ export function UserGroup({ model, status, uid, patch, more, toggleMore }: Foldi
           <SettingsRow
             label={t('settings.autoconfig.wizard.password')}
             controlId={fieldId(uid, 'user-password')}
-            tall={!u.password}
-            description={u.password ? undefined : <FieldHint tone="warn">{t('settings.autoconfig.editor.passwordRequired')}</FieldHint>}
+            tall={!password}
+            description={
+              password ? undefined : u.passwordHash ? (
+                <FieldHint tone="ok">{t('settings.autoconfig.editor.secretSaved')}</FieldHint>
+              ) : (
+                <FieldHint tone="warn">{t('settings.autoconfig.editor.passwordRequired')}</FieldHint>
+              )
+            }
             control={
-              <PasswordInput id={fieldId(uid, 'user-password')} value={u.password} onChange={(password) => patch('user', { password })} />
+              <PasswordInput
+                id={fieldId(uid, 'user-password')}
+                value={password}
+                onChange={(userPassword) => patch('secrets', { userPassword })}
+              />
             }
           />
           <MoreRow
@@ -92,12 +97,6 @@ export function UserGroup({ model, status, uid, patch, more, toggleMore }: Foldi
             <SettingsRow
               label={t('settings.autoconfig.userRealName')}
               controlId={fieldId(uid, 'full-name')}
-              tall={!u.realName.trim()}
-              description={
-                u.realName.trim() ? undefined : (
-                  <FieldHint tone={fullNameNeeded ? 'warn' : 'plain'}>{t('settings.autoconfig.editor.fullNameRequired')}</FieldHint>
-                )
-              }
               control={
                 <TextField
                   id={fieldId(uid, 'full-name')}

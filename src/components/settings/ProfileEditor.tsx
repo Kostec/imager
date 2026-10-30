@@ -9,28 +9,28 @@ import {
   blockingReason,
   firstBlockingGroup,
   fromEditorModel,
-  keySourceError,
+  keySourceFormatError,
   profileFacts,
   profileProgress,
   sameModel,
-  toEditorModel,
+  sealEditorForm,
+  toEditorForm,
+  type EditorForm,
   type EditorGroup,
-  type EditorModel,
   type MoreKey,
 } from '../../config/profileEditorModel';
 import { useMotion } from '../../contexts/MotionContext';
 import { deleteAutoconfigProfile, upsertAutoconfigProfile } from '../../hooks/useSettings';
 import { useSshKeyCheck } from '../../hooks/useSshKeyCheck';
-import { logWarn } from '../../hooks/useTauri';
+import { deriveWifiPsk, hashPassword, logWarn } from '../../hooks/useTauri';
 import { useToasts } from '../../hooks/useToasts';
 import type { AutoconfigProfile, LeaveGuard } from '../../types';
 import { focusAfterInput } from '../../utils';
-import { isSshKeysSourceError } from '../../utils/errorUtils';
 import { ConfirmationDialog } from '../shared/ConfirmationDialog';
 import { AccessGroup } from './editor/AccessGroup';
 import { SettingsGroup, SettingsRow } from './controls';
 import { ActionPill } from './editor/ActionPill';
-import { AdvancedGroup } from './editor/AdvancedGroup';
+import { DeviceGroup } from './editor/DeviceGroup';
 import { EditorHeader } from './editor/EditorHeader';
 import { NameScopeGroup } from './editor/NameScopeGroup';
 import { NetworkGroup } from './editor/NetworkGroup';
@@ -63,8 +63,8 @@ export function ProfileEditor({ profile, onSaved, onDeleted, onCancel, registerL
   const { reduced } = useMotion();
   const scrollBehavior: ScrollBehavior = reduced ? 'auto' : 'smooth';
 
-  const [initial] = useState<EditorModel>(() =>
-    toEditorModel(profile, {
+  const [initial] = useState<EditorForm>(() =>
+    toEditorForm(profile, {
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone ?? '',
       locale: localeForLanguage(i18n.language),
     })
@@ -83,12 +83,10 @@ export function ProfileEditor({ profile, onSaved, onDeleted, onCancel, registerL
   const keyCheck = useSshKeyCheck(
     keyLookupSource(access.source),
     access.source === 'link' ? access.keyLink : access.keyUser,
-    access.mode === 'keys' && keySourceError(access) === null
+    access.apply && access.enabled && keySourceFormatError(access) === null
   );
-  const keyProblem = keyCheck.status === 'failed' && isSshKeysSourceError(keyCheck.error);
-  const keyCount = keyCheck.status === 'found' ? keyCheck.lookup.total : null;
-  const progress = profileProgress(model, keyProblem);
-  const facts = useMemo(() => profileFacts(model, keyCount, keyProblem, t), [model, keyCount, keyProblem, t]);
+  const progress = profileProgress(model);
+  const facts = useMemo(() => profileFacts(model, t), [model, t]);
 
   const dirtyRef = useRef(dirty);
   useEffect(() => {
@@ -104,12 +102,12 @@ export function ProfileEditor({ profile, onSaved, onDeleted, onCancel, registerL
     return () => registerLeaveGuard(null);
   }, [registerLeaveGuard, guard]);
 
-  const set = (value: Partial<EditorModel>) => setModel((m) => ({ ...m, ...value }));
-  const patch = <K extends EditorPart>(key: K, value: Partial<EditorModel[K]>) =>
+  const set = (value: Partial<EditorForm>) => setModel((m) => ({ ...m, ...value }));
+  const patch = <K extends EditorPart>(key: K, value: Partial<EditorForm[K]>) =>
     setModel((m) => {
       const next = { ...m[key], ...value };
-      // Touching the network or region writes it, so an untouched profile keeps Armbian's defaults.
-      if (key === 'network' || key === 'region') Object.assign(next, { apply: true });
+      // Touching one of these writes it, so an untouched profile keeps the image's defaults.
+      if (key === 'network' || key === 'region' || key === 'access') Object.assign(next, { apply: true });
       return { ...m, [key]: next };
     });
   // Back to the saved part when it was unapplied, so the round trip leaves nothing dirty
@@ -131,15 +129,18 @@ export function ProfileEditor({ profile, onSaved, onDeleted, onCancel, registerL
       return;
     }
     setSaving(true);
-    const next: AutoconfigProfile = {
-      id: profile?.id ?? crypto.randomUUID(),
-      updatedAt: Date.now(),
-      ...fromEditorModel(model),
-    };
     try {
+      // From here on the form holds the hashes, and the typed passwords are gone.
+      const sealed = await sealEditorForm(model, { hashPassword, deriveWifiPsk });
+      const next: AutoconfigProfile = {
+        id: profile?.id ?? crypto.randomUUID(),
+        updatedAt: Date.now(),
+        ...fromEditorModel(sealed),
+      };
       await upsertAutoconfigProfile(next);
       showSuccess(t(isNew ? 'settings.autoconfig.toastCreated' : 'settings.autoconfig.toastUpdated'));
-      setSaved(model);
+      setModel(sealed);
+      setSaved(sealed);
       dirtyRef.current = false;
       onSaved(next);
     } catch (error) {
@@ -189,7 +190,7 @@ export function ProfileEditor({ profile, onSaved, onDeleted, onCancel, registerL
         <UserGroup {...groupProps} status={progress.status.user} more={more.user} toggleMore={toggleMore} />
         <AccessGroup {...groupProps} status={progress.status.access} more={more.access} toggleMore={toggleMore} keyCheck={keyCheck} />
         <RegionGroup {...groupProps} status={progress.status.region} />
-        <AdvancedGroup {...groupProps} status={progress.status.advanced} />
+        <DeviceGroup {...groupProps} status={progress.status.device} />
         {!isNew && (
           <SettingsGroup eyebrow={t('settings.writing.dangerZone')} danger>
             <SettingsRow

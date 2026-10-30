@@ -7,7 +7,7 @@ import { Header, HomePage } from './components/layout';
 import { CATALOG_CHANGED_EVENT } from './components/settings/CatalogSection';
 import { FlashProgress } from './components/flash';
 import { CacheManagerModal, SettingsPage } from './components/settings';
-import { getBoards, selectCustomImage, classifyCustomImage, logInfo, logWarn, checkNeedsDecompression, decompressCustomImage } from './hooks/useTauri';
+import { getBoards, selectCustomImage, classifyCustomImage, checkImageSettings, logInfo, logWarn, checkNeedsDecompression, decompressCustomImage } from './hooks/useTauri';
 import { useDeviceMonitor } from './hooks/useDeviceMonitor';
 import { useConnectivity } from './hooks/useConnectivity';
 import { ToastProvider, useToasts } from './hooks/useToasts';
@@ -16,7 +16,7 @@ import { useMotion } from './contexts/MotionContext';
 import { getAutoconfigProfile } from './hooks/useSettings';
 import { EVENTS, IMAGE_VARIANT, UI, SETTINGS_VIEW, WUKONG_BOARD } from './config';
 import { IMAGE_FORMAT, isEdlImage } from './types';
-import { presetIsEmpty } from './config/autoconfig';
+import { presetIsEmpty, settingsAvailable } from './config/autoconfig';
 import { buildLocalImage, focusAfterInput, DEFAULT_COLOR } from './utils';
 import { imageErrorKey } from './utils/errorUtils';
 import type { ImageInfo, BlockDevice, BoardInfo, Manufacturer, SelectionStep, AutoconfigConfig, CustomImageInfo, FlashExit, LeaveGuard, SettingsView } from './types';
@@ -269,16 +269,18 @@ function AppContent() {
         return;
       }
 
+      const settingsSupport = await checkImageSettings(imagePath);
       const cachedImage = buildLocalImage({
         variant: IMAGE_VARIANT.CACHED,
         name: filename,
         size,
         path: imagePath,
         format: IMAGE_FORMAT.SD,
+        supportsAutoconfig: settingsAvailable(settingsSupport),
       });
 
       resetSelectionsFrom('image');
-      setSelectedImage(cachedImage);
+      setSelectedImage({ ...cachedImage, settings_support: settingsSupport });
     };
 
     window.addEventListener(EVENTS.CACHE_IMAGE_REUSE, handler);
@@ -296,7 +298,9 @@ function AppContent() {
   }
 
   function handleImageSelect(image: ImageInfo) {
-    setSelectedImage(image);
+    // The catalog vouches for its images; the file itself is checked once it is here and unpacked.
+    const allowed = image.supports_autoconfig === true;
+    setSelectedImage({ ...image, supports_autoconfig: allowed, settings_support: { kind: allowed ? 'deferred' : 'catalogRefused' } });
     resetSelectionsFrom('device');
   }
 
@@ -330,16 +334,14 @@ function AppContent() {
 
   async function applyCustomImage(result: CustomImageInfo) {
     // One backend call classifies the picked file; only QDL archives are refused here.
-    const { is_qdl: isQdl, supports_autoconfig: supportsAutoconfig } = await classifyCustomImage(result.path).catch(() => ({
-      is_qdl: false,
-      supports_autoconfig: false,
-    }));
+    const { is_qdl: isQdl } = await classifyCustomImage(result.path).catch(() => ({ is_qdl: false }));
     if (isQdl) {
       logInfo('app', `Refused QDL archive: ${result.name}`);
       showError(t('custom.qdlUnsupported'));
       return;
     }
 
+    const settingsSupport = await checkImageSettings(result.path);
     const customImage = buildLocalImage({
       variant: IMAGE_VARIANT.CUSTOM,
       name: result.name,
@@ -347,11 +349,11 @@ function AppContent() {
       path: result.path,
       format: IMAGE_FORMAT.BLOCK,
       storage: null,
-      supportsAutoconfig,
+      supportsAutoconfig: settingsAvailable(settingsSupport),
     });
 
     resetSelectionsFrom('image');
-    setSelectedImage(customImage);
+    setSelectedImage({ ...customImage, settings_support: settingsSupport });
   }
 
   function handleComplete() {

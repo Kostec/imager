@@ -4,6 +4,7 @@
 import { forwardRef, useEffect, useId, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronRight, CircleCheck, RotateCcw, TriangleAlert } from 'lucide-react';
+import { BOARD_OVERLAYS } from '../../../config/autoconfig';
 import { loadCountryFlag } from '../../../config/countryFlags';
 import type { EditorGroup } from '../../../config/profileEditorModel';
 
@@ -12,7 +13,7 @@ interface EditorSectionProps {
   eyebrow: string;
   description: string;
   attention: boolean;
-  /** A small link at the end of the head, such as Use Armbian defaults */
+  /** A small link at the end of the head, such as Use image defaults */
   action?: ReactNode;
   children: ReactNode;
 }
@@ -37,7 +38,7 @@ export function EditorSection({ id, eyebrow, description, attention, action, chi
   );
 }
 
-/** Shown on an applied area: it stops writing it, so Armbian keeps its own defaults there */
+/** Shown on an applied area: it stops writing it, so the image keeps its own defaults there */
 export function DefaultsAction({ onClick }: { onClick: (byPointer: boolean) => void }) {
   const { t } = useTranslation();
   return (
@@ -45,6 +46,63 @@ export function DefaultsAction({ onClick }: { onClick: (byPointer: boolean) => v
       <RotateCcw size={12} aria-hidden="true" />
       {t('settings.autoconfig.editor.useDefaults')}
     </button>
+  );
+}
+
+/** A password stored as a hash: the field is empty, and this says so and offers to drop it */
+export function SavedSecretHint({ text, onForget }: { text: string; onForget: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <span className="pe-saved">
+      <FieldHint tone="ok">{text}</FieldHint>
+      <button type="button" className="pe-saved__forget" onClick={onForget}>
+        {t('settings.autoconfig.editor.forgetSecret')}
+      </button>
+    </span>
+  );
+}
+
+export function TextArea({ id, value, onChange, placeholder, invalid = false, rows }: {
+  id: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  invalid?: boolean;
+  rows: number;
+}) {
+  return (
+    <textarea
+      id={id}
+      className={`pe-textarea${invalid ? ' is-invalid' : ''}`}
+      value={value}
+      rows={rows}
+      placeholder={placeholder}
+      aria-invalid={invalid || undefined}
+      autoComplete="off"
+      autoCapitalize="off"
+      autoCorrect="off"
+      spellCheck={false}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  );
+}
+
+export function OverlayChecks({ selected, onChange }: { selected: readonly string[]; onChange: (overlays: string[]) => void }) {
+  return (
+    <span className="pe-checks">
+      {BOARD_OVERLAYS.map((overlay) => (
+        <label key={overlay} className="pe-check">
+          <input
+            type="checkbox"
+            checked={selected.includes(overlay)}
+            onChange={(e) =>
+              onChange(BOARD_OVERLAYS.filter((o) => (o === overlay ? e.target.checked : selected.includes(o))))
+            }
+          />
+          {overlay}
+        </label>
+      ))}
+    </span>
   );
 }
 

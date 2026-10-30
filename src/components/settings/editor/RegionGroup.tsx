@@ -3,17 +3,16 @@
 
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Globe, MapPin } from 'lucide-react';
-import { COMMON_LOCALES, getTimezones, localeLabel, timezoneOffset } from '../../../config/autoconfig';
-import { localeCountry, type RegionMode } from '../../../config/profileEditorModel';
+import { Globe, Image } from 'lucide-react';
+import { COMMON_LOCALES, KEYBOARD_LAYOUTS, getTimezones, localeLabel, timezoneOffset } from '../../../config/autoconfig';
+import { localeCountry, type RegionChoice } from '../../../config/profileEditorModel';
 import { SegmentedControl, SelectMenu, SettingsRow, type SelectOption } from '../controls';
-import { CountryFlag, DefaultsAction, EditorSection, FieldHint } from './EditorParts';
+import { CountryFlag, EditorSection, FieldHint } from './EditorParts';
 import type { EditorGroupProps } from './types';
 
 export function RegionGroup({ model, status, patch, keepDefaults }: EditorGroupProps) {
   const { t, i18n } = useTranslation();
   const r = model.region;
-  const choose = r.apply && r.mode === 'choose';
   const placeholder = t('settings.autoconfig.selectPlaceholder');
 
   const locales = useMemo<SelectOption<string>[]>(
@@ -39,35 +38,35 @@ export function RegionGroup({ model, status, patch, keepDefaults }: EditorGroupP
     ];
   }, [placeholder]);
 
+  const keyboards = useMemo<SelectOption<string>[]>(
+    () => [{ value: '', label: placeholder }, ...KEYBOARD_LAYOUTS.map((k) => ({ value: k, label: k }))],
+    [placeholder]
+  );
+
   return (
     <EditorSection
       id="region"
       eyebrow={t('settings.autoconfig.wizard.steps.locale')}
       description={t('settings.autoconfig.wizard.locale.sub')}
       attention={status === 'attn'}
-      action={r.apply ? <DefaultsAction onClick={(byPointer) => keepDefaults('region', byPointer)} /> : undefined}
     >
       <SettingsRow
         label={t('settings.autoconfig.wizard.steps.locale')}
-        tall={!choose}
-        description={
-          choose ? undefined : (
-            <FieldHint>{t(r.apply ? 'settings.autoconfig.editor.locationHint' : 'settings.autoconfig.armbianDefaults')}</FieldHint>
-          )
-        }
+        tall={!r.apply}
+        description={r.apply ? undefined : <FieldHint>{t('settings.autoconfig.armbianDefaults')}</FieldHint>}
         control={
-          <SegmentedControl<RegionMode>
-            value={r.apply ? r.mode : null}
+          <SegmentedControl<RegionChoice>
+            value={r.apply ? 'choose' : 'keep'}
             ariaLabel={t('settings.autoconfig.wizard.steps.locale')}
             options={[
-              { value: 'location', label: t('settings.autoconfig.wizard.locale.location'), icon: <MapPin aria-hidden="true" /> },
+              { value: 'keep', label: t('settings.autoconfig.wizard.locale.keep'), icon: <Image aria-hidden="true" /> },
               { value: 'choose', label: t('settings.autoconfig.wizard.locale.choose'), icon: <Globe aria-hidden="true" /> },
             ]}
-            onChange={(mode) => patch('region', { mode })}
+            onChange={(choice) => (choice === 'keep' ? keepDefaults('region', false) : patch('region', {}))}
           />
         }
       />
-      {choose && (
+      {r.apply && (
         <>
           <SettingsRow
             label={t('settings.autoconfig.wizard.locale.language')}
@@ -92,6 +91,17 @@ export function RegionGroup({ model, status, patch, keepDefaults }: EditorGroupP
                 ariaLabel={t('settings.autoconfig.timezone')}
                 searchable
                 searchPlaceholder={t('settings.autoconfig.wizard.locale.searchTimezone')}
+              />
+            }
+          />
+          <SettingsRow
+            label={t('settings.autoconfig.wizard.locale.keyboard')}
+            control={
+              <SelectMenu
+                value={r.keyboard}
+                options={keyboards}
+                onChange={(keyboard) => patch('region', { keyboard })}
+                ariaLabel={t('settings.autoconfig.wizard.locale.keyboard')}
               />
             }
           />

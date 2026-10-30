@@ -65,8 +65,10 @@ export interface ImageInfo {
   // Custom image fields
   is_custom?: boolean;
   custom_path?: string;
-  /** Custom files only: classify_custom_image found an Armbian first-boot setup a profile can use */
+  /** Whether first-boot settings can go onto this image; `settings_support` says why */
   supports_autoconfig?: boolean;
+  /** What the image check answered; set by the app when the image is picked */
+  settings_support?: ImageSettingsSupport;
 }
 
 /** API image formats the app writes; mirrors the allowlist in src-tauri/src/images/filters.rs */
@@ -296,32 +298,45 @@ export interface SshKeyLookup {
 /** Login shell for the first user provisioned via autoconfig */
 export type UserShell = 'bash' | 'zsh';
 
-/** Armbian first-boot autoconfig settings; all fields optional, only set/non-empty values
- * are written into the image's /root/.not_logged_in_yet file. */
+/** First-boot settings, as `AutoconfigConfig` in src-tauri/src/provision/config.rs. Every field is optional and only what
+ * is set gets applied. Passwords are here only as a hash and the Wi-Fi key only as its derived PSK. */
 export interface AutoconfigConfig {
-  applyNetwork?: boolean;
   ethernetEnabled?: boolean;
   wifiEnabled?: boolean;
   wifiSsid?: string;
-  wifiKey?: string;
+  wifiPsk?: string;
   wifiCountryCode?: string;
+  wifiHidden?: boolean;
   useStaticIp?: boolean;
   staticIp?: string;
   staticMask?: string;
   staticGateway?: string;
   staticDns?: string;
+  hostname?: string;
   locale?: string;
   timezone?: string;
-  langBasedOnLocation?: boolean;
-  rootPassword?: string;
-  rootKeyUrl?: string;
+  keyboardLayout?: string;
+  rootPasswordHash?: string;
   userName?: string;
-  userPassword?: string;
-  userKeyUrl?: string;
+  userPasswordHash?: string;
   userShell?: UserShell;
   userRealName?: string;
-  remoteConfigUrl?: string;
+  sshEnabled?: boolean;
+  sshPasswordAuth?: boolean;
+  sshRootLogin?: boolean;
+  /** `authorized_keys` lines, already fetched */
+  sshAuthorizedKeys?: string;
+  overlays?: string[];
+  userScript?: string;
 }
+
+/** Answer of probe_custom_image, as `provision::ImageSupport` */
+export type ImageSupport =
+  | { kind: 'supported' | 'notExt4' | 'noFirstrunService' | 'alreadyBooted' }
+  | { kind: 'unsupportedFs'; reason: string };
+
+/** The answer plus what only the app knows: `deferred` is checked once the image is unpacked */
+export type ImageSettingsSupport = ImageSupport | { kind: 'deferred' | 'unreadable' | 'catalogRefused' };
 
 /** A named, client-side autoconfig profile the user can select before flashing */
 export interface AutoconfigProfile {

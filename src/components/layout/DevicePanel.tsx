@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { PanelError, DeviceIcon, getDeviceBadge, BoardImage, MarqueeText, EmptyState } from '../shared';
-import type { BlockDevice, AutoconfigProfile, AutoconfigProfilesChangedDetail, FlashMethod } from '../../types';
+import type { BlockDevice, AutoconfigProfile, AutoconfigProfilesChangedDetail, FlashMethod, ImageSettingsSupport } from '../../types';
 import { isEdlMethod } from '../../types';
 import { getTargetDevices } from '../../hooks/useTauri';
 import { getAutoconfigProfiles, getAllowSystemDevices } from '../../hooks/useSettings';
@@ -15,7 +15,8 @@ import { useAsyncData } from '../../hooks/useAsyncData';
 import { useErrorRetry } from '../../hooks/useErrorRetry';
 import { useSkeletonLoading } from '../../hooks/useSkeletonLoading';
 import { POLLING, UI, EVENTS, qdlInstructionsKey } from '../../config';
-import { isProfileOfferedFor } from '../../config/autoconfig';
+import { defaultRootExposed, isProfileOfferedFor, settingsSupportText } from '../../config/autoconfig';
+import { profileSpec } from '../../config/profileEditorModel';
 import { ProfileMenu, ProfileWizard } from '../autoconfig';
 import { getDeviceColors } from '../../config/deviceColors';
 import { getDeviceType, devicesChanged, sortDevices } from '../../utils/deviceUtils';
@@ -40,8 +41,10 @@ interface DevicePanelProps {
   /** Selected board slug; profiles scoped to other boards are not offered */
   boardSlug?: string | null;
   boardName?: string | null;
-  /** Whether autoconfig profiles apply (Armbian images only; hidden for generic custom images). */
+  /** Whether first-boot settings can go onto the selected image. */
   supportsAutoconfig?: boolean;
+  /** What the image check answered, shown when settings are off or decided later. */
+  settingsSupport?: ImageSettingsSupport;
 }
 
 /** Inline storage browser: device list while picking, confirm summary once `selectedDevice` is set. */
@@ -57,6 +60,7 @@ export function DevicePanel({
   boardSlug = null,
   boardName = null,
   supportsAutoconfig = true,
+  settingsSupport,
 }: DevicePanelProps) {
   const { t } = useTranslation();
   const [showSystemDevices, setShowSystemDevices] = useState(false);
@@ -78,10 +82,9 @@ export function DevicePanel({
   // Both QDL (TAR) and UFS images flash over EDL, so they share device detection (getQdlDevices).
   const isQdlMode = isEdlMethod(flashMethod);
 
-  // Autoconfig profiles apply to Armbian images (both sd/.img.xz and QDL); hidden for generic custom images.
   const showAutoconfig = supportsAutoconfig;
 
-  // Opt-in autoconfig profile picker (flash-time only, Armbian images).
+  // Opt-in profile picker (flash-time only).
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectedProfileId, setSelectedProfileId] = useState('');
   const [wizardOpen, setWizardOpen] = useState(false);
@@ -258,7 +261,14 @@ export function DevicePanel({
                     <span>{t('flash.systemDeviceWarning')}</span>
                   </li>
                 )}
-                {/* Opt-in autoconfig profile, integrated as the final summary row (Armbian images only). */}
+                {/* An image that takes no settings still flashes; the reason stays in view. */}
+                {!showAutoconfig && !isQdlMode && settingsSupport && (
+                  <li className="device-summary__syswarn">
+                    <TriangleAlert size={15} />
+                    <span>{t('flash.settings.unavailable', { reason: settingsSupportText(settingsSupport, t) })}</span>
+                  </li>
+                )}
+                {/* Opt-in profile, integrated as the final summary row. */}
                 {showAutoconfig && (
                   <li className="device-summary__profile">
                     <button
@@ -303,6 +313,29 @@ export function DevicePanel({
                       />
                     )}
                   </li>
+                )}
+                {showAutoconfig && selectedProfile && (
+                  <>
+                    {profileSpec(selectedProfile, t).map((spec) => (
+                      <li key={spec.label} className="device-summary__row">
+                        <span className="device-summary__label">{t(spec.label)}</span>
+                        <span className="device-summary__valueinfo">
+                          <MarqueeText text={spec.text} className="device-summary__value" maxWidth={UI.MARQUEE.SUMMARY_VALUE_WIDTH} />
+                        </span>
+                      </li>
+                    ))}
+                    {settingsSupport?.kind === 'deferred' && (
+                      <li className="device-summary__row">
+                        <span className="device-summary__sub">{settingsSupportText(settingsSupport, t)}</span>
+                      </li>
+                    )}
+                    {defaultRootExposed(selectedProfile.config) && (
+                      <li className="device-summary__syswarn">
+                        <TriangleAlert size={15} />
+                        <span>{t('flash.settings.rootDefault')}</span>
+                      </li>
+                    )}
+                  </>
                 )}
               </ul>
 

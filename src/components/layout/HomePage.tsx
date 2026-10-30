@@ -6,6 +6,7 @@ import { Cpu, CircuitBoard, Database, Factory, HardDrive, Usb, FolderOpen, Check
 import { useTranslation } from 'react-i18next';
 import { getCachedBoardImage } from '../../hooks/useTauri';
 import { FEATURES, IMAGE_VARIANT } from '../../config';
+import { settingsAvailable } from '../../config/autoconfig';
 import { formatImageIdentity, formatKernelLabel } from '../../utils';
 import type { BoardInfo, ImageInfo, BlockDevice, Manufacturer } from '../../types';
 import { deriveFlashMethod, isEdlImage } from '../../types';
@@ -267,7 +268,8 @@ export function HomePage({
       onSelect={onSelectDevice}
       onConfirm={onConfirmDevice}
       onCancel={onClearDevice}
-      supportsAutoconfig={FEATURES.AUTOCONFIG && (selectedImage?.supports_autoconfig ?? false)}
+      supportsAutoconfig={FEATURES.AUTOCONFIG && settingsAvailable(selectedImage?.settings_support)}
+      settingsSupport={selectedImage?.settings_support}
     />
   );
 
