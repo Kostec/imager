@@ -182,3 +182,57 @@ pub async fn get_block_devices() -> Result<Vec<BlockDevice>, String> {
 
     Ok(devices)
 }
+
+// ─── Catalog source ──────────────────────────────────────────────────────────
+
+/// The `catalog_source` setting: empty for the built-in catalog, else a URL or a folder path
+#[tauri::command]
+pub fn get_catalog_source() -> String {
+    crate::catalog::current_source().to_setting()
+}
+
+/// Make `value` the catalog source (empty = built-in) and drop what the old one served
+#[tauri::command]
+pub async fn set_catalog_source(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+    value: String,
+) -> Result<(), String> {
+    let source = crate::catalog::CatalogSource::parse(&value);
+    crate::catalog::save_source(&app, &source)?;
+    log_info!(
+        "board_queries",
+        "Catalog source set to {:?}",
+        source.to_setting()
+    );
+    *state.boards.lock().await = None;
+    *state.vendors.lock().await = None;
+    Ok(())
+}
+
+/// Try a source without activating it: counts when it loads, the reason when it does not
+#[tauri::command]
+pub async fn check_catalog_source(value: String) -> crate::catalog::CatalogCheck {
+    crate::catalog::check(&crate::catalog::CatalogSource::parse(&value)).await
+}
+
+/// Why the active external catalog could not be used, if it could not
+#[tauri::command]
+pub fn get_catalog_error() -> Option<String> {
+    crate::catalog::last_error()
+}
+
+/// Let the user pick the folder that holds `catalog.json`
+#[tauri::command]
+pub async fn pick_catalog_folder(window: tauri::Window) -> Result<Option<String>, String> {
+    use tauri_plugin_dialog::DialogExt;
+
+    let picked = window
+        .dialog()
+        .file()
+        .set_title("Select the catalog folder")
+        .blocking_pick_folder();
+    Ok(picked
+        .and_then(|path| path.into_path().ok())
+        .map(|path| path.display().to_string()))
+}

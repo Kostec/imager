@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "vendors": [
+    { "slug": "example", "name": "Example Vendor" }
+  ],
+  "boards": [
+    { "slug": "example-one", "name": "Example One", "vendor": "example", "soc": "H3" }
+  ],
+  "images": [
+    {
+      "board": "example-one",
+      "name": "Demo image",
+      "release": "bullseye",
+      "kernel": "5.15.93",
+      "url": "images/demo.img",
+      "sha256": "3ca8cd1b690fa9a1baa1b11cee8d21fef6a87f929bea7b4e9efe84d034bf0986",
+      "size": 59,
+      "supports_settings": false
+    },
+    {
+      "board": "wukongpi",
+      "name": "Demo image for Wukong Pi",
+      "release": "bullseye",
+      "kernel": "5.15.93",
+      "url": "images/demo.img",
+      "sha256": "3ca8cd1b690fa9a1baa1b11cee8d21fef6a87f929bea7b4e9efe84d034bf0986",
+      "size": 59
+    }
+  ]
+}

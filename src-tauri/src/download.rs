@@ -93,6 +93,19 @@ fn decompressed_name(filename: &str) -> Result<&str, String> {
     cache_file_name(filename.trim_end_matches(".xz"))
 }
 
+/// The file behind a `file://` URL: a catalog image read from the catalog folder.
+fn local_source(url: &str) -> Option<Result<PathBuf, String>> {
+    if !url.starts_with("file:") {
+        return None;
+    }
+    Some(
+        reqwest::Url::parse(url)
+            .ok()
+            .and_then(|parsed| parsed.to_file_path().ok())
+            .ok_or_else(|| format!("Invalid file URL: {url}")),
+    )
+}
+
 /// Extract filename from URL
 fn extract_filename(url: &str) -> Result<&str, String> {
     log_debug!(MODULE, "Extracting filename from URL: {}", url);
@@ -106,9 +119,26 @@ fn extract_filename(url: &str) -> Result<&str, String> {
     cache_file_name(filename)
 }
 
+/// A catalog that lists `sha256` values hands them over as `sha256:<hex>` in place of a checksum URL.
+pub(crate) const INLINE_SHA_PREFIX: &str = "sha256:";
+
+fn inline_sha(hex: &str) -> Result<String, String> {
+    let hex = hex.trim().to_ascii_lowercase();
+    if hex.len() == 64 && hex.chars().all(|c| c.is_ascii_hexdigit()) {
+        Ok(hex)
+    } else {
+        Err(format!(
+            "[SHA_UNAVAILABLE] Invalid SHA256 hash format: {hex}"
+        ))
+    }
+}
+
 /// Fetch the expected SHA256. Errors are prefixed [SHA_UNAVAILABLE] to
 /// distinguish a fetch failure from a genuine mismatch.
 async fn fetch_expected_sha(client: &Client, sha_url: &str) -> Result<String, String> {
+    if let Some(inline) = sha_url.strip_prefix(INLINE_SHA_PREFIX) {
+        return inline_sha(inline);
+    }
     log_debug!(MODULE, "Fetching SHA256 from: {}", sha_url);
 
     let response = client
@@ -230,42 +260,13 @@ async fn verify_sha256(
     }
 }
 
-/// Download and decompress an Armbian image; when sha_url is given, verifies the compressed file first.
-pub async fn download_image(
+/// Stream `url` into `temp_path`, removing the partial file on any failure.
+async fn fetch_remote(
+    client: &Client,
     url: &str,
-    sha_url: Option<&str>,
-    output_dir: &PathBuf,
-    state: Arc<DownloadState>,
-) -> Result<PathBuf, String> {
-    state.reset();
-    // Clear any stale temp_path left by a previous failed download.
-    *state.temp_path.lock().await = None;
-
-    let filename = extract_filename(url)?;
-
-    let output_filename = decompressed_name(filename)?;
-    let output_path = output_dir.join(output_filename);
-
-    log_info!(MODULE, "Download requested: {}", url);
-    log_debug!(MODULE, "Output path: {}", output_path.display());
-
-    if let Some(cached_path) = crate::cache::get_cached_image(output_filename) {
-        log_info!(MODULE, "Using cached image: {}", cached_path.display());
-        *state.output_path.lock().await = Some(cached_path.clone());
-        return Ok(cached_path);
-    }
-
-    #[cfg(debug_assertions)]
-    crate::dev_scenarios::network::check_download_start()?;
-
-    std::fs::create_dir_all(output_dir)
-        .map_err(|e| format!("Failed to create output directory: {}", e))?;
-
-    let client = Client::builder()
-        .user_agent(config::app::USER_AGENT)
-        .build()
-        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
-
+    temp_path: &Path,
+    state: &Arc<DownloadState>,
+) -> Result<(), String> {
     log_info!(MODULE, "Starting download...");
     let response = client.get(url).send().await.map_err(|e| {
         log_error!(MODULE, "Failed to start download: {}", e);
@@ -296,9 +297,8 @@ pub async fn download_image(
         bytes_to_mb(total_size)
     );
 
-    let temp_path = output_dir.join(format!("{}{}", filename, config::images::DOWNLOAD_SUFFIX));
     let mut temp_file =
-        File::create(&temp_path).map_err(|e| format!("Failed to create temp file: {}", e))?;
+        File::create(temp_path).map_err(|e| format!("Failed to create temp file: {}", e))?;
 
     let mut stream = response.bytes_stream();
     let mut downloaded: u64 = 0;
@@ -316,7 +316,7 @@ pub async fn download_image(
         if state.is_cancelled.load(Ordering::SeqCst) {
             log_info!(MODULE, "Download cancelled by user");
             drop(temp_file);
-            let _ = std::fs::remove_file(&temp_path);
+            let _ = std::fs::remove_file(temp_path);
             return Err("Download cancelled".to_string());
         }
 
@@ -324,13 +324,13 @@ pub async fn download_image(
             Ok(c) => c,
             Err(e) => {
                 drop(temp_file);
-                let _ = std::fs::remove_file(&temp_path);
+                let _ = std::fs::remove_file(temp_path);
                 return Err(format!("Download error: {}", e));
             }
         };
         if let Err(e) = temp_file.write_all(&chunk) {
             drop(temp_file);
-            let _ = std::fs::remove_file(&temp_path);
+            let _ = std::fs::remove_file(temp_path);
             return Err(format!("Failed to write chunk: {}", e));
         }
 
@@ -344,6 +344,122 @@ pub async fn download_image(
 
     drop(temp_file);
     tracker.finish();
+    Ok(())
+}
+
+/// Copy a catalog image from the catalog folder into `temp_path`, so it goes through the same
+/// checksum and decompression steps as a download.
+async fn copy_local(
+    source: &Path,
+    temp_path: &Path,
+    state: &Arc<DownloadState>,
+) -> Result<(), String> {
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    log_info!(MODULE, "Copying catalog image: {}", source.display());
+    let mut input = tokio::fs::File::open(source)
+        .await
+        .map_err(|e| format!("Failed to open {}: {}", source.display(), e))?;
+    let total = input.metadata().await.map(|m| m.len()).unwrap_or(0);
+    state.total_bytes.store(total, Ordering::SeqCst);
+
+    let mut output = tokio::fs::File::create(temp_path)
+        .await
+        .map_err(|e| format!("Failed to create temp file: {}", e))?;
+    let mut buffer = vec![0u8; 1024 * 1024];
+    let mut copied = 0u64;
+    loop {
+        if state.is_cancelled.load(Ordering::SeqCst) {
+            drop(output);
+            let _ = std::fs::remove_file(temp_path);
+            return Err("Download cancelled".to_string());
+        }
+        let read = match input.read(&mut buffer).await {
+            Ok(n) => n,
+            Err(e) => {
+                drop(output);
+                let _ = std::fs::remove_file(temp_path);
+                return Err(format!("Failed to read {}: {}", source.display(), e));
+            }
+        };
+        if read == 0 {
+            break;
+        }
+        if let Err(e) = output.write_all(&buffer[..read]).await {
+            drop(output);
+            let _ = std::fs::remove_file(temp_path);
+            return Err(format!("Failed to write chunk: {}", e));
+        }
+        copied += read as u64;
+        state.downloaded_bytes.store(copied, Ordering::SeqCst);
+    }
+    output
+        .flush()
+        .await
+        .map_err(|e| format!("Failed to write temp file: {}", e))?;
+    Ok(())
+}
+
+/// Download and decompress an Armbian image; when sha_url is given, verifies the compressed file first.
+pub async fn download_image(
+    url: &str,
+    sha_url: Option<&str>,
+    output_dir: &PathBuf,
+    state: Arc<DownloadState>,
+) -> Result<PathBuf, String> {
+    state.reset();
+    // Clear any stale temp_path left by a previous failed download.
+    *state.temp_path.lock().await = None;
+
+    let local = match local_source(url) {
+        Some(path) => {
+            let path = path?;
+            if !crate::catalog::is_in_active_folder(&path) {
+                return Err(format!(
+                    "Refused a file outside the catalog folder: {}",
+                    path.display()
+                ));
+            }
+            Some(path)
+        }
+        None => None,
+    };
+    let local_name = local
+        .as_ref()
+        .map(|path| path.file_name().and_then(|n| n.to_str()).unwrap_or(""));
+    let filename = match local_name {
+        Some(name) => cache_file_name(name)?,
+        None => extract_filename(url)?,
+    };
+
+    let output_filename = decompressed_name(filename)?;
+    let output_path = output_dir.join(output_filename);
+
+    log_info!(MODULE, "Download requested: {}", url);
+    log_debug!(MODULE, "Output path: {}", output_path.display());
+
+    if let Some(cached_path) = crate::cache::get_cached_image(output_filename) {
+        log_info!(MODULE, "Using cached image: {}", cached_path.display());
+        *state.output_path.lock().await = Some(cached_path.clone());
+        return Ok(cached_path);
+    }
+
+    #[cfg(debug_assertions)]
+    crate::dev_scenarios::network::check_download_start()?;
+
+    std::fs::create_dir_all(output_dir)
+        .map_err(|e| format!("Failed to create output directory: {}", e))?;
+
+    let client = Client::builder()
+        .user_agent(config::app::USER_AGENT)
+        .build()
+        .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
+
+    let temp_path = output_dir.join(format!("{}{}", filename, config::images::DOWNLOAD_SUFFIX));
+    match &local {
+        Some(source) => copy_local(source, &temp_path, &state).await?,
+        None => fetch_remote(&client, url, &temp_path, &state).await?,
+    }
 
     if let Some(sha_url) = sha_url {
         state.is_verifying_sha.store(true, Ordering::SeqCst);
@@ -565,5 +681,111 @@ mod tests {
             sha_failure_err(e),
             "SHA256 verification failed: [SHA_UNAVAILABLE] Invalid SHA file format"
         );
+    }
+
+    #[test]
+    fn an_inline_sha256_is_the_expected_hash() {
+        let hex = "ABCDEF0123456789abcdef0123456789abcdef0123456789abcdef0123456789";
+        assert_eq!(inline_sha(hex), Ok(hex.to_ascii_lowercase()));
+        assert!(inline_sha("abc").is_err_and(|e| e.contains("[SHA_UNAVAILABLE]")));
+        assert!(inline_sha(&"g".repeat(64)).is_err());
+    }
+
+    #[test]
+    fn file_urls_are_local_sources_and_http_urls_are_not() {
+        assert!(local_source("https://example.com/a.img").is_none());
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("a b.img");
+        let url = reqwest::Url::from_file_path(&path).unwrap();
+        assert_eq!(local_source(url.as_str()).unwrap().unwrap(), path);
+        assert!(
+            local_source("file:///").unwrap().is_err()
+                || local_source("file://host/x").unwrap().is_err()
+        );
+    }
+
+    #[tokio::test]
+    async fn a_local_source_outside_the_catalog_folder_is_refused() {
+        let dir = tempfile::tempdir().unwrap();
+        let file = dir.path().join("a.img");
+        std::fs::write(&file, b"x").unwrap();
+        let url = reqwest::Url::from_file_path(&file).unwrap();
+
+        let result = download_image(
+            url.as_str(),
+            None,
+            &dir.path().join("out"),
+            Arc::new(DownloadState::new()),
+        )
+        .await;
+
+        assert!(result.is_err_and(|e| e.contains("outside the catalog folder")));
+    }
+
+    /// Serves `body` for every request on a free local port.
+    async fn serve(body: &'static [u8]) -> String {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        tokio::spawn(async move {
+            while let Ok((mut socket, _)) = listener.accept().await {
+                tokio::spawn(async move {
+                    let mut buf = [0u8; 2048];
+                    let _ = socket.read(&mut buf).await;
+                    let head = format!(
+                        "HTTP/1.1 200 OK
+Content-Length: {}
+Connection: close
+
+",
+                        body.len()
+                    );
+                    let _ = socket.write_all(head.as_bytes()).await;
+                    let _ = socket.write_all(body).await;
+                });
+            }
+        });
+        format!("http://{addr}")
+    }
+
+    // sha256 of the bytes "wukong image" (sha256sum)
+    const BODY: &[u8] = b"wukong image";
+    const BODY_SHA: &str = "459384a9b0e55264aff52979c306fccd5af27ca2c432dbcee75c2c8bace55df9";
+
+    #[tokio::test]
+    async fn a_catalog_image_with_a_wrong_sha256_is_deleted_and_refused() {
+        let base = serve(BODY).await;
+        let out = tempfile::tempdir().unwrap();
+        let wrong = format!("{INLINE_SHA_PREFIX}{}", "0".repeat(64));
+
+        let result = download_image(
+            &format!("{base}/wrongsum-test.img"),
+            Some(&wrong),
+            &out.path().to_path_buf(),
+            Arc::new(DownloadState::new()),
+        )
+        .await;
+
+        assert!(result.is_err_and(|e| e.starts_with(TAG_SHA_MISMATCH)));
+        let left: Vec<_> = std::fs::read_dir(out.path()).unwrap().collect();
+        assert!(left.is_empty(), "files left behind: {left:?}");
+    }
+
+    #[tokio::test]
+    async fn a_catalog_image_with_the_right_sha256_is_kept() {
+        let base = serve(BODY).await;
+        let out = tempfile::tempdir().unwrap();
+        let right = format!("{INLINE_SHA_PREFIX}{BODY_SHA}");
+
+        let path = download_image(
+            &format!("{base}/rightsum-test.img"),
+            Some(&right),
+            &out.path().to_path_buf(),
+            Arc::new(DownloadState::new()),
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(std::fs::read(path).unwrap(), BODY);
     }
 }

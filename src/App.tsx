@@ -4,9 +4,10 @@
 import { useState, useCallback, useEffect, useRef, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Header, HomePage } from './components/layout';
+import { CATALOG_CHANGED_EVENT } from './components/settings/CatalogSection';
 import { FlashProgress } from './components/flash';
 import { CacheManagerModal, SettingsPage } from './components/settings';
-import { selectCustomImage, classifyCustomImage, logInfo, logWarn, checkNeedsDecompression, decompressCustomImage } from './hooks/useTauri';
+import { getBoards, selectCustomImage, classifyCustomImage, logInfo, logWarn, checkNeedsDecompression, decompressCustomImage } from './hooks/useTauri';
 import { useDeviceMonitor } from './hooks/useDeviceMonitor';
 import { useConnectivity } from './hooks/useConnectivity';
 import { ToastProvider, useToasts } from './hooks/useToasts';
@@ -16,9 +17,9 @@ import { getAutoconfigProfile } from './hooks/useSettings';
 import { EVENTS, IMAGE_VARIANT, UI, SETTINGS_VIEW, WUKONG_BOARD } from './config';
 import { IMAGE_FORMAT, isEdlImage } from './types';
 import { presetIsEmpty } from './config/autoconfig';
-import { buildLocalImage, focusAfterInput } from './utils';
+import { buildLocalImage, focusAfterInput, DEFAULT_COLOR } from './utils';
 import { imageErrorKey } from './utils/errorUtils';
-import type { ImageInfo, BlockDevice, SelectionStep, AutoconfigConfig, CustomImageInfo, FlashExit, LeaveGuard, SettingsView } from './types';
+import type { ImageInfo, BlockDevice, BoardInfo, Manufacturer, SelectionStep, AutoconfigConfig, CustomImageInfo, FlashExit, LeaveGuard, SettingsView } from './types';
 import './styles/index.css';
 
 // Debug-only panel; the define folds to false in release builds, which drops the chunk.
@@ -38,8 +39,20 @@ function AppContent() {
   const [isFlashing, setIsFlashing] = useState(false);
   const [settledFlashExit, setSettledFlashExit] = useState<FlashExit | null>(null);
   const [selectionEpoch, setSelectionEpoch] = useState(0);
-  // The board is fixed: every reset of the flow lands back on it.
-  const selectedBoard = WUKONG_BOARD;
+  // Boards of the active catalog; the built-in catalog is the one Wukong board.
+  const [catalogBoards, setCatalogBoards] = useState<BoardInfo[] | null>(null);
+  const [pickedManufacturer, setPickedManufacturer] = useState<Manufacturer | null>(null);
+  const [pickedBoard, setPickedBoard] = useState<BoardInfo | null>(null);
+  const boards = catalogBoards?.length ? catalogBoards : [WUKONG_BOARD];
+  // The pickers only appear when there is something to choose.
+  const showManufacturerStep = new Set(boards.map((b) => b.vendor)).size > 1;
+  const showBoardStep = boards.length > 1;
+  const selectedManufacturer: Manufacturer | null =
+    pickedManufacturer ??
+    (showManufacturerStep
+      ? null
+      : { id: boards[0].vendor, name: boards[0].vendor_name, color: DEFAULT_COLOR, boardCount: boards.length });
+  const selectedBoard: BoardInfo | null = pickedBoard ?? (showBoardStep ? null : boards[0]);
   const [selectedImage, setSelectedImage] = useState<ImageInfo | null>(null);
   const [selectedDevice, setSelectedDevice] = useState<BlockDevice | null>(null);
   // Opt-in autoconfig profile id picked at flash time; null means unchanged behaviour.
@@ -192,6 +205,32 @@ function AppContent() {
     };
   }, [selectedProfileId]);
 
+  // Boards come from the catalog source; a change of source starts the flow over.
+  const [catalogEpoch, setCatalogEpoch] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    getBoards()
+      .then((list) => !cancelled && setCatalogBoards(list))
+      .catch(() => !cancelled && setCatalogBoards(null));
+    return () => {
+      cancelled = true;
+    };
+  }, [catalogEpoch]);
+
+  useEffect(() => {
+    const handler = () => {
+      setPickedManufacturer(null);
+      setPickedBoard(null);
+      setSelectedImage(null);
+      setSelectedDevice(null);
+      setSelectedProfileId(null);
+      setCatalogEpoch((epoch) => epoch + 1);
+      setSelectionEpoch((epoch) => epoch + 1);
+    };
+    window.addEventListener(CATALOG_CHANGED_EVENT, handler);
+    return () => window.removeEventListener(CATALOG_CHANGED_EVENT, handler);
+  }, []);
+
   // Toast on reconnect, but not on initial mount
   useEffect(() => {
     if (prevOnlineRef.current === false && isOnline) {
@@ -202,7 +241,9 @@ function AppContent() {
 
   // Clear a step and all downstream selections, which become invalid when it changes
   const resetSelectionsFrom = useCallback((step: SelectionStep) => {
-    if (step === 'image') setSelectedImage(null);
+    if (step === 'manufacturer') setPickedManufacturer(null);
+    if (step === 'manufacturer' || step === 'board') setPickedBoard(null);
+    if (step !== 'device') setSelectedImage(null);
     setSelectedDevice(null);
     // The profile picker belongs to the device step; drop the opt-in selection.
     setSelectedProfileId(null);
@@ -243,6 +284,16 @@ function AppContent() {
     window.addEventListener(EVENTS.CACHE_IMAGE_REUSE, handler);
     return () => window.removeEventListener(EVENTS.CACHE_IMAGE_REUSE, handler);
   }, [t, showError, resetSelectionsFrom]);
+
+  function handleManufacturerSelect(manufacturer: Manufacturer) {
+    setPickedManufacturer(manufacturer);
+    resetSelectionsFrom('board');
+  }
+
+  function handleBoardSelect(board: BoardInfo) {
+    setPickedBoard(board);
+    resetSelectionsFrom('image');
+  }
 
   function handleImageSelect(image: ImageInfo) {
     setSelectedImage(image);
@@ -343,6 +394,10 @@ function AppContent() {
       <Header
         selectedImage={selectedImage}
         selectedDevice={selectedDevice}
+        selectedManufacturer={selectedManufacturer}
+        selectedBoard={selectedBoard}
+        showManufacturerStep={showManufacturerStep}
+        showBoardStep={showBoardStep}
         onReset={handleReset}
         onNavigateToStep={handleNavigateToStep}
         isFlashing={isFlashing}
@@ -357,7 +412,7 @@ function AppContent() {
         {isFlashing ? (
           selectedImage && selectedDevice && (
             <FlashProgress
-              board={selectedBoard}
+              board={selectedBoard ?? WUKONG_BOARD}
               image={selectedImage}
               device={selectedDevice}
               autoconfig={autoconfig}
@@ -381,7 +436,14 @@ function AppContent() {
           >
           <HomePage
             key={selectionEpoch}
+            selectedManufacturer={selectedManufacturer}
             selectedBoard={selectedBoard}
+            showManufacturerStep={showManufacturerStep}
+            showBoardStep={showBoardStep}
+            onChooseManufacturer={() => resetSelectionsFrom('manufacturer')}
+            onChooseBoard={() => resetSelectionsFrom('board')}
+            onSelectManufacturer={handleManufacturerSelect}
+            onSelectBoard={handleBoardSelect}
             selectedImage={selectedImage}
             selectedDevice={selectedDevice}
             onChooseImage={() => resetSelectionsFrom('image')}

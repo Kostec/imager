@@ -25,7 +25,8 @@
     "offlineHint": "Flash from a local file or an image you downloaded earlier.",
     "cachedImages": "Cached Images",
     "chooseImageTitle": "Choose an image for your Wukong Pi Zero",
-    "chooseImageHint": ".img, .iso or a compressed image (.xz, .gz, .zst, .bz2). The file stays on your computer, no internet needed."
+    "chooseImageHint": ".img, .iso or a compressed image (.xz, .gz, .zst, .bz2). The file stays on your computer, no internet needed.",
+    "catalogError": "The external catalog is not used: {{reason}}"
   },
   "flash": {
     "systemDeviceWarning": "Flashing this can destroy the running OS.",
@@ -460,8 +461,8 @@
           "title": "Ready to create {{name}}",
           "sub": "Check it once. Then it is selected on the summary.",
           "subSettings": "Check it once. Then it shows in your profile list.",
-        "titleEmpty": "Nothing set in {{name}} yet",
-        "subEmpty": "Every area keeps the image defaults, so there is nothing to write. Edit one to create it."
+          "titleEmpty": "Nothing set in {{name}} yet",
+          "subEmpty": "Every area keeps the image defaults, so there is nothing to write. Edit one to create it."
         }
       },
       "editor": {
@@ -680,6 +681,21 @@
       "pagerLabel": "Profile pages",
       "discardTitle": "Discard changes?",
       "discardBody": "Your unsaved changes to this profile will be lost."
+    },
+    "catalog": {
+      "eyebrow": "Catalog",
+      "label": "Catalog source",
+      "description": "A URL or a folder with catalog.json. Its manufacturers, boards and images are added to the built-in ones. Empty: built-in only.",
+      "placeholder": "http://localhost:8080 or D:\\catalog",
+      "chooseFolder": "Choose folder",
+      "check": "Check",
+      "save": "Save",
+      "saved": "Catalog source saved",
+      "cleared": "Catalog source cleared",
+      "checkOk": "Catalog is readable",
+      "checkFailed": "Catalog cannot be used",
+      "counts": "{{boards}} boards, {{vendors}} manufacturers, {{images}} images",
+      "warning": "Warning: {{warning}}"
     }
   },
   "update": {

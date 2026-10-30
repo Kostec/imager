@@ -7,12 +7,14 @@ mod filters;
 mod models;
 
 pub use filters::{map_board, map_images};
-pub use models::{ApiBoardSummary, ApiImage, ApiQdl, ApiVendor, BoardInfo, ImageInfo};
+pub use models::{
+    ApiBoardSummary, ApiDownloadInfo, ApiImage, ApiQdl, ApiVendor, BoardInfo, ImageInfo,
+};
 
 use crate::catalog::{self, Catalog};
 use crate::config;
 use crate::utils::assets_dir;
-use crate::{log_debug, log_error, log_warn};
+use crate::{log_debug, log_warn};
 
 use once_cell::sync::Lazy;
 use reqwest::header::{HeaderMap, HeaderValue};
@@ -69,13 +71,9 @@ pub fn cleanup_legacy_cache() {
     }
 }
 
+/// The active catalog; a failing external source leaves the built-in catalog (see `catalog::last_error`).
 async fn load_catalog() -> Result<Catalog, String> {
-    catalog::load(&catalog::current_source())
-        .await
-        .map_err(|e| {
-            log_error!("images", "Failed to load the catalog: {}", e);
-            e.to_string()
-        })
+    Ok(catalog::load_active().await)
 }
 
 /// All boards of the active catalog.

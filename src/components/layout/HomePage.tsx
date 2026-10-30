@@ -2,19 +2,31 @@
 // Copyright (c) 2025-2026 Daniele Briguglio, superkali@armbian.com
 
 import { useState, useEffect, type ReactNode, type ComponentType } from 'react';
-import { Cpu, Database, HardDrive, Usb, FolderOpen, Check, ArrowRight, Lock } from 'lucide-react';
+import { Cpu, CircuitBoard, Database, Factory, HardDrive, Usb, FolderOpen, Check, ArrowRight, Lock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getCachedBoardImage } from '../../hooks/useTauri';
 import { FEATURES, IMAGE_VARIANT } from '../../config';
 import { formatImageIdentity, formatKernelLabel } from '../../utils';
-import type { BoardInfo, ImageInfo, BlockDevice } from '../../types';
+import type { BoardInfo, ImageInfo, BlockDevice, Manufacturer } from '../../types';
 import { deriveFlashMethod, isEdlImage } from '../../types';
 import { MarqueeText, BoardImage } from '../shared';
+import { ManufacturerPanel } from './ManufacturerPanel';
+import { BoardPanel } from './BoardPanel';
 import { ImagePanel } from './ImagePanel';
 import { DevicePanel } from './DevicePanel';
 
 interface HomePageProps {
-  selectedBoard: BoardInfo;
+  selectedManufacturer: Manufacturer | null;
+  /** Null until the user picks one, when the catalog offers several */
+  selectedBoard: BoardInfo | null;
+  /** The catalog offers several manufacturers */
+  showManufacturerStep: boolean;
+  /** The catalog offers several boards */
+  showBoardStep: boolean;
+  onChooseManufacturer: () => void;
+  onChooseBoard: () => void;
+  onSelectManufacturer: (manufacturer: Manufacturer) => void;
+  onSelectBoard: (board: BoardInfo) => void;
   selectedImage: ImageInfo | null;
   selectedDevice: BlockDevice | null;
   onChooseImage: () => void;
@@ -189,9 +201,16 @@ function SplitLayout({
   );
 }
 
-/** Main selection page: the fixed board, then the image and storage steps. */
+/** Main selection page: manufacturer and board when the catalog offers a choice, then image and storage. */
 export function HomePage({
+  selectedManufacturer,
   selectedBoard,
+  showManufacturerStep,
+  showBoardStep,
+  onChooseManufacturer,
+  onChooseBoard,
+  onSelectManufacturer,
+  onSelectBoard,
   selectedImage,
   selectedDevice,
   onChooseImage,
@@ -207,9 +226,10 @@ export function HomePage({
   const isCached = selectedImage?.image_variant === IMAGE_VARIANT.CACHED;
 
   // A catalog may carry a board photo; without one the panels show the neutral icon.
-  const previewSlug = selectedBoard.slug;
+  const previewSlug = selectedBoard?.slug ?? null;
   const [boardImage, setBoardImage] = useState<string | null>(null);
   useEffect(() => {
+    if (!previewSlug) return;
     let alive = true;
     getCachedBoardImage(previewSlug)
       .then((uri) => alive && setBoardImage(uri))
@@ -227,7 +247,7 @@ export function HomePage({
 
   // Selections shown in the inline storage confirm summary.
   const deviceSummary = [
-    { label: t('home.board'), value: selectedBoard.name },
+    selectedBoard && { label: t('home.board'), value: selectedBoard.name },
     selectedImage && {
       label: t('home.operatingSystem'),
       value: osLabelText(selectedImage, t),
@@ -241,8 +261,8 @@ export function HomePage({
       flashMethod={selectedImage ? deriveFlashMethod(selectedImage) : undefined}
       summary={deviceSummary}
       boardImage={boardImage}
-      boardSlug={selectedBoard.slug}
-      boardName={selectedBoard.name}
+      boardSlug={selectedBoard?.slug ?? ''}
+      boardName={selectedBoard?.name ?? ''}
       selectedDevice={selectedDevice}
       onSelect={onSelectDevice}
       onConfirm={onConfirmDevice}
@@ -251,18 +271,52 @@ export function HomePage({
     />
   );
 
-  const steps: Step[] = [
+  // A picked image stands in for the choices before it (a cached image needs no board).
+  const manufacturerDone = !!selectedManufacturer || !!selectedImage;
+  const boardDone = !!selectedBoard || !!selectedImage;
+
+  const steps: Step[] = [];
+  if (showManufacturerStep) {
+    steps.push({
+      key: 'manufacturer',
+      index: steps.length + 1,
+      icon: Factory,
+      label: t('home.manufacturer'),
+      cta: t('home.chooseBrand'),
+      value: selectedManufacturer?.name,
+      state: manufacturerDone ? 'done' : 'active',
+      onClick: onChooseManufacturer,
+      panel: manufacturerDone ? undefined : <ManufacturerPanel onSelect={onSelectManufacturer} />,
+    });
+  }
+  if (showBoardStep) {
+    steps.push({
+      key: 'board',
+      index: steps.length + 1,
+      icon: CircuitBoard,
+      label: t('home.board'),
+      cta: t('home.chooseBoard'),
+      value: selectedBoard?.name,
+      state: !manufacturerDone ? 'locked' : boardDone ? 'done' : 'active',
+      onClick: onChooseBoard,
+      panel:
+        selectedManufacturer && !boardDone ? (
+          <BoardPanel manufacturer={selectedManufacturer} onSelect={onSelectBoard} />
+        ) : undefined,
+    });
+  }
+  steps.push(
     {
       key: 'image',
-      index: 1,
+      index: steps.length + 1,
       icon: Database,
       label: t('home.operatingSystem'),
       cta: t('home.chooseOs'),
       value: selectedImage ? osTitle(selectedImage, t) : undefined,
       meta: selectedImage ? osMeta(selectedImage, t) : null,
-      state: selectedImage ? 'done' : 'active',
+      state: selectedImage ? 'done' : boardDone ? 'active' : 'locked',
       onClick: onChooseImage,
-      panel: selectedImage ? undefined : (
+      panel: selectedImage || !selectedBoard ? undefined : (
         <ImagePanel
           board={selectedBoard}
           onChooseFile={onChooseCustomImage}
@@ -273,7 +327,7 @@ export function HomePage({
     },
     {
       key: 'device',
-      index: 2,
+      index: steps.length + 2,
       icon: dStep.icon,
       label: dStep.label,
       cta: dStep.cta,
@@ -283,12 +337,12 @@ export function HomePage({
       primary: !!selectedImage && !selectedDevice,
       onClick: onChooseDevice,
       panel: selectedImage ? renderDevicePanel() : undefined,
-    },
-  ];
+    }
+  );
 
   return (
     <SplitLayout
-      boardName={selectedBoard.name}
+      boardName={selectedBoard?.name ?? selectedManufacturer?.name ?? 'Wukong Imager'}
       steps={steps}
       boardImage={boardImage}
       fullBleed={!!selectedDevice}

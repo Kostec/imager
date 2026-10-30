@@ -20,6 +20,7 @@ import { formatBytes } from '../../utils';
 import { ConfirmationDialog } from '../shared/ConfirmationDialog';
 import { ErrorDisplay } from '../shared/ErrorDisplay';
 import { CacheManagerModal } from './CacheManagerModal';
+import { CatalogSection } from './CatalogSection';
 import { SettingsHero } from './SettingsHero';
 import { SelectMenu, SettingsGroup, SettingsRow, ToggleRow, type SelectOption } from './controls';
 
@@ -178,6 +179,8 @@ export function DownloadsSection() {
           trailing={<ChevronRight size={16} aria-hidden="true" />}
         />
       </SettingsGroup>
+
+      <CatalogSection />
 
       <ConfirmationDialog
         isOpen={confirmClear}

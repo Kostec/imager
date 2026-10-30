@@ -93,5 +93,6 @@ fn map_image(api: &ApiImage) -> ImageInfo {
                 size_bytes: dv.size_bytes,
             })
             .collect(),
+        supports_autoconfig: api.supports_settings.then_some(true),
     }
 }

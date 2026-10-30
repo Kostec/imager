@@ -83,6 +83,9 @@ pub struct ApiImage {
     #[serde(default)]
     pub display_variants: Vec<ApiDisplayVariant>,
     pub download: ApiDownloadInfo,
+    /// External catalogs only: the image takes the first-boot settings bundle
+    #[serde(default)]
+    pub supports_settings: bool,
 }
 
 /// Download metadata nested inside an image entry
@@ -199,6 +202,9 @@ pub struct ImageInfo {
     /// Display variant files for multi-panel devices
     #[serde(default)]
     pub display_variants: Vec<DisplayVariantInfo>,
+    /// Set for catalog images that take the first-boot settings bundle; absent otherwise
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub supports_autoconfig: Option<bool>,
 }
 
 /// Companion file info for the frontend

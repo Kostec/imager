@@ -5,13 +5,19 @@ import type { Ref } from 'react';
 import { ArrowLeft, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { APP_ICON } from '../../assets';
-import type { ImageInfo, BlockDevice, SelectionStep } from '../../types';
+import type { ImageInfo, BlockDevice, BoardInfo, Manufacturer, SelectionStep } from '../../types';
 import { isEdlImage } from '../../types';
 import { SettingsButton } from '../settings';
 
 interface HeaderProps {
   selectedImage?: ImageInfo | null;
   selectedDevice?: BlockDevice | null;
+  selectedManufacturer?: Manufacturer | null;
+  selectedBoard?: BoardInfo | null;
+  /** The catalog offers several manufacturers, so the manufacturer step exists */
+  showManufacturerStep?: boolean;
+  /** The catalog offers several boards, so the board step exists */
+  showBoardStep?: boolean;
   onReset?: () => void;
   onNavigateToStep?: (step: SelectionStep) => void;
   isFlashing?: boolean;
@@ -33,6 +39,10 @@ interface HeaderProps {
 export function Header({
   selectedImage,
   selectedDevice,
+  selectedManufacturer = null,
+  selectedBoard = null,
+  showManufacturerStep = false,
+  showBoardStep = false,
   onReset,
   onNavigateToStep,
   isFlashing,
@@ -49,8 +59,14 @@ export function Header({
   // EDL targets are USB devices in download mode, not storage drives.
   const isEdl = !!selectedImage && isEdlImage(selectedImage);
   const targetLabel = t(isEdl ? 'header.stepDevice' : 'header.stepStorage');
-  // The board is fixed, so the flow is only the image and the target.
+  // Manufacturer and board steps exist only when the catalog offers a choice.
   const steps = [
+    ...(showManufacturerStep
+      ? [{ key: 'manufacturer' as SelectionStep, label: t('header.stepManufacturer'), completed: !!selectedManufacturer }]
+      : []),
+    ...(showBoardStep
+      ? [{ key: 'board' as SelectionStep, label: t('header.stepBoard'), completed: !!selectedBoard }]
+      : []),
     { key: 'image' as SelectionStep, label: t('header.stepImage'), completed: !!selectedImage },
     { key: 'device' as SelectionStep, label: targetLabel, completed: !!selectedDevice },
   ];

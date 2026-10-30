@@ -1,0 +1,9 @@
+# Serves this folder over HTTP: http://localhost:8080/catalog.json
+services:
+  catalog:
+    image: nginx:1.27-alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./catalog.json:/usr/share/nginx/html/catalog.json:ro
+      - ./images:/usr/share/nginx/html/images:ro
