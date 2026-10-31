@@ -13,7 +13,7 @@ interface VendorLogoState {
   isLoaded: boolean;
 }
 
-/** Preload vendor logos and track failures; failed vendors are grouped under "other" */
+/** Preload vendor logos and track failures; a vendor without a logo is shown by its initials */
 export function useVendorLogos(boards: BoardInfo[] | null, isActive: boolean) {
   const [state, setState] = useState<VendorLogoState>({
     failedLogos: new Set(),
@@ -66,13 +66,10 @@ export function useVendorLogos(boards: BoardInfo[] | null, isActive: boolean) {
     });
   }, [isActive, boards, state.isLoaded]);
 
-  // Falls back to "other" when the vendor's logo failed to load
+  // A missing logo keeps the vendor: catalog vendors have no logos, and grouping them merged every vendor into "other"
   const getEffectiveVendor = useCallback((board: BoardInfo): string => {
-    if (!board.vendor || state.failedLogos.has(board.vendor)) {
-      return VENDOR.FALLBACK_ID;
-    }
     return board.vendor || VENDOR.FALLBACK_ID;
-  }, [state.failedLogos]);
+  }, []);
 
   const hasValidLogo = useCallback((board: BoardInfo): boolean => {
     return !!(board.vendor && !state.failedLogos.has(board.vendor));
@@ -96,7 +93,7 @@ export interface ManufacturerData {
   standardCount: number;
 }
 
-/** Build the manufacturer list from boards; boards with failed logos go under "other" */
+/** Build the manufacturer list from boards; boards without a vendor go under "other" */
 export function useManufacturerList(
   boards: BoardInfo[] | null,
   isActive: boolean,
@@ -117,10 +114,11 @@ export function useManufacturerList(
     }> = {};
 
     for (const board of boards) {
-      const validLogo = hasValidLogo(board);
-      const vendorId = validLogo ? (board.vendor || VENDOR.FALLBACK_ID) : VENDOR.FALLBACK_ID;
-      const vendorName = validLogo ? (board.vendor_name || VENDOR.FALLBACK_NAME) : VENDOR.FALLBACK_NAME;
-      const vendorLogo = validLogo
+      const vendorId = getEffectiveVendor(board);
+      const vendorName = vendorId === VENDOR.FALLBACK_ID
+        ? VENDOR.FALLBACK_NAME
+        : (board.vendor_name || board.vendor);
+      const vendorLogo = hasValidLogo(board)
         ? (cachedUrls.get(board.vendor) || null)
         : null;
 
@@ -208,7 +206,7 @@ export function useManufacturerList(
       });
 
     return result;
-  }, [boards, isLoaded, searchFilter, hasValidLogo, cachedUrls]);
+  }, [boards, isLoaded, searchFilter, getEffectiveVendor, hasValidLogo, cachedUrls]);
 
   return {
     manufacturers,

@@ -11,7 +11,7 @@ Wukong Imager — форк `armbian/imager` (Tauri 2: Rust-бэкенд, React/T
 3. Перед записью форма «запечатывается»: `hash_password` даёт `$6$`-хеш, `derive_wifi_psk` — 64 hex. В профиль и на диск уходят только они (ADR 0004).
 4. `flash_image` (`src-tauri/src/commands/operations.rs`) вызывает `autoconfig::effective_profile` (пустой профиль = без настроек) и `autoconfig::prepare_flash_copy`. Она копирует образ в `autoconfig_temp_dir()`, проверяет его `provision::probe_image` и вызывает `provision::provision_image` на копии. Кэш скачанного образа не меняется. Копия удаляется в `Drop`; при старте `sweep_stale_working_copies` чистит остатки.
 5. Копия записывается на устройство платформенным кодом `src-tauri/src/flash/` (windows.rs, linux/, macos/). Прогресс — `get_download_progress`, `get_flash_progress`; отмена — `cancel_operation`.
-6. На карте лежит drop-in к `armbian-firstrun.service`. При первом включении `firstboot.sh` (до сети) применяет настройки из `firstboot.env`, `post-network.sh` (после сети) доделывает Wi-Fi, запускает свой скрипт и стирает всё, что оставил имиджер.
+6. На карте лежит drop-in к `armbian-firstrun.service`. При первом включении `firstboot.sh` (до сети) применяет настройки из `firstboot.env` (с именем устройства включает mDNS в `systemd-resolved` из образа, ADR 0007), `post-network.sh` (после сети) доделывает Wi-Fi, запускает свой скрипт и стирает всё, что оставил имиджер.
 
 Каталог: `catalog::load_active()` читает источник из настройки `catalog_source`, накладывает его на встроенный каталог и отдаёт типы upstream (`ApiVendor`, `ApiBoardSummary`, `ApiImage`). `images/mod.rs` ходит только в `catalog`, в API Armbian — никто, кроме QDL (`ARMBIAN_API_BASE`). Смена источника шлёт событие `wukong-catalog-changed`.
 

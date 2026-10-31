@@ -61,6 +61,18 @@ apply_hostname() {
 	hostname "$WK_HOSTNAME" || true
 }
 
+# avahi-daemon is not in the image, systemd-resolved is: it answers name.local by itself, no internet needed.
+# NetworkManager hands it every link with mDNS on. /etc/resolv.conf stays NetworkManager's file, so DNS does not change.
+apply_mdns() {
+	mkdir -p /etc/systemd/resolved.conf.d /etc/NetworkManager/conf.d || return 1
+	printf '[Resolve]\nMulticastDNS=yes\n' >/etc/systemd/resolved.conf.d/10-wukong-mdns.conf || return 1
+	printf '[connection]\nconnection.mdns=2\n' >/etc/NetworkManager/conf.d/30-wukong-mdns.conf || return 1
+	chmod 644 /etc/systemd/resolved.conf.d/10-wukong-mdns.conf /etc/NetworkManager/conf.d/30-wukong-mdns.conf
+	systemctl enable systemd-resolved.service || return 1
+	# The boot transaction is already computed: enable alone would wait for the next boot.
+	systemctl --no-block start systemd-resolved.service
+}
+
 # timedatectl needs dbus, which may not be up yet; these two files are all it would write.
 apply_timezone() {
 	[[ -f /usr/share/zoneinfo/$WK_TIMEZONE ]] || return 1
@@ -359,6 +371,7 @@ main() {
 	log "started"
 
 	[[ -n ${WK_HOSTNAME:-} ]] && step hostname apply_hostname
+	[[ -n ${WK_HOSTNAME:-} ]] && step mdns apply_mdns
 	[[ -n ${WK_TIMEZONE:-} ]] && step timezone apply_timezone
 	[[ -n ${WK_LOCALE:-} ]] && step locale apply_locale
 	[[ -n ${WK_KEYBOARD:-} ]] && step keyboard apply_keyboard

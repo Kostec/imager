@@ -45,15 +45,9 @@ write_stubs() {
   stub chronyc 'exit 0'
   stub ip 'echo "default via 10.0.2.2 dev eth0"'
   stub systemctl 'echo "systemctl $*" >>'"$CALLS"
+  # Only to catch a fetch coming back: the stage must not need the internet.
+  stub apt-get 'echo "apt-get $*" >>'"$CALLS"
   stub dpkg 'echo "dpkg $*" >>'"$CALLS"
-  stub dpkg-query '[[ -e /tmp/device-test-installed ]] && printf "install ok installed"'
-  stub apt-get 'echo "apt-get $*" >>'"$CALLS"'
-list=
-for arg in "$@"; do [[ $arg == Dir::Etc::sourcelist=* ]] && list=${arg#*=}; done
-[[ -n $list ]] && cat "$list" >>/tmp/device-test-apt-list
-[[ " $* " == *" update "* && -e /tmp/device-test-update-fails ]] && exit 100
-[[ " $* " == *" install "* && " $* " != *" --download-only "* ]] && touch /tmp/device-test-installed
-exit 0'
   # NM_STATE: up, no-adapter or down.
   stub nmcli 'case "${NM_STATE:-up}:$*" in
   down:*) exit 8 ;;
@@ -70,7 +64,7 @@ esac'
 
 reset_card() {
   rm -rf "$WK_DIR" "$WK_UNIT" "$WK_LOG" "$WK_HDD" "${RAMLOG_DROPIN%/*}" /var/lib/wukong-*
-  rm -f /tmp/device-test-installed /tmp/device-test-update-fails /tmp/device-test-apt-list /var/tmp/device-test-script-runs
+  rm -f /var/tmp/device-test-script-runs
   : >"$CALLS"
   mkdir -p "$WK_DIR" "$WK_HDD"
   cp "$DEVICE/firstboot.sh" "$DEVICE/post-network.sh" "$WK_DIR/"
@@ -97,20 +91,13 @@ script_runs() { wc -l <"/var/tmp/device-test-script-runs" 2>/dev/null || echo 0;
 called() { grep -qF -- "$1" "$CALLS"; }
 no_secret_in_log() { ! grep -qF -e "$SSID" -e "$PSK" -e "$HASH" "$WK_LOG"; }
 same_as_log() { cmp -s "$WK_LOG" "$WK_HDD/wukong-firstboot.log"; }
-apt_list_is_trimmed() {
-  [[ -s /tmp/device-test-apt-list ]] && grep -q ' bullseye main' /tmp/device-test-apt-list &&
-    ! grep -qE 'bullseye-backports|security' /tmp/device-test-apt-list
-}
-
-SOURCES_SAVED=/tmp/device-test-sources
-restore_sources() { cp "$SOURCES_SAVED" /etc/apt/sources.list; }
+MDNS_RESOLVED=/etc/systemd/resolved.conf.d/10-wukong-mdns.conf
+MDNS_NM=/etc/NetworkManager/conf.d/30-wukong-mdns.conf
 
 test_online() {
   reset_card
   NM_STATE=active post_network
-  expect 'avahi is installed' in_log 'post-network: OK avahi-daemon installed'
-  expect 'apt works without backports and security' apt_list_is_trimmed
-  expect 'an interrupted dpkg is finished first' called 'dpkg --configure -a'
+  refuse 'nothing is fetched from the internet' grep -q -e apt-get -e dpkg "$CALLS"
   expect 'Wi-Fi up gives OK wifi' grep -qE 'post-network: OK wifi$' "$WK_LOG"
   refuse 'Wi-Fi up gives no FAIL wifi' in_log 'FAIL wifi'
   expect 'the settings are wiped' in_log 'OK settings wiped'
@@ -122,19 +109,11 @@ test_online() {
   expect 'the log reached the disk' same_as_log
 }
 
-test_update_errors() {
-  reset_card
-  touch /tmp/device-test-update-fails
-  NM_STATE=active post_network
-  expect 'a list that fails to update does not stop the install' in_log 'post-network: OK avahi-daemon installed'
-}
-
 test_wifi_absent_network() {
   reset_card
   post_network
   expect 'FAIL wifi gives the state and the reason' \
     grep -qE 'post-network: FAIL wifi: .*30 \(disconnected\).*53 \(The Wi-Fi network could not be found\)' "$WK_LOG"
-  expect 'FAIL wifi does not stop avahi' in_log 'post-network: OK avahi-daemon installed'
   expect 'FAIL wifi does not stop the wipe' in_log 'OK settings wiped'
   expect 'no value of firstboot.env in the log' no_secret_in_log
 }
@@ -164,7 +143,6 @@ test_wipe_fails() {
 
   post_network
   expect 'the next boot does not repeat the script' test "$(script_runs)" = 1
-  refuse 'the next boot does not repeat apt' test "$(grep -c 'apt-get.* update' "$CALLS")" -gt 1
   expect 'still not wiped, still logged' in_log 'post-network: FAIL settings not wiped'
 
   rm -f "$STUB/shred" "$STUB/rm"
@@ -206,25 +184,38 @@ test_firstboot_log() {
   expect 'even from a private umask' test "$(stat -c %a "${RAMLOG_DROPIN%/*}")" = 755
 }
 
-mkdir -p /etc/systemd/system /etc/apt /var/log
-cp /etc/apt/sources.list "$SOURCES_SAVED" 2>/dev/null || : >"$SOURCES_SAVED"
-cat >/etc/apt/sources.list <<'LIST'
-deb http://deb.debian.org/debian bullseye main contrib non-free
-deb http://deb.debian.org/debian bullseye-updates main contrib non-free
-deb http://deb.debian.org/debian bullseye-backports main contrib non-free
-deb http://security.debian.org/ bullseye-security main contrib non-free
-LIST
+# name.local comes from systemd-resolved, offline, before NetworkManager starts.
+test_firstboot_mdns() {
+  reset_card
+  rm -f "$MDNS_RESOLVED" "$MDNS_NM"
+  printf "WK_HOSTNAME='wukong-e2e'
+" >"$WK_DIR/firstboot.env"
+  PATH="$STUB:$PATH" bash "$WK_DIR/firstboot.sh"
+  expect 'a name turns mDNS on' in_log 'firstboot: OK mdns'
+  expect 'systemd-resolved answers mDNS' grep -qx 'MulticastDNS=yes' "$MDNS_RESOLVED"
+  expect 'NetworkManager gives it every link' grep -qx 'connection.mdns=2' "$MDNS_NM"
+  expect 'systemd-resolved is enabled' called 'systemctl enable systemd-resolved.service'
+  expect 'and started this boot' called 'systemctl --no-block start systemd-resolved.service'
+
+  reset_card
+  rm -f "$MDNS_RESOLVED" "$MDNS_NM"
+  : >"$WK_DIR/firstboot.env"
+  PATH="$STUB:$PATH" bash "$WK_DIR/firstboot.sh"
+  refuse 'no name leaves mDNS alone' test -e "$MDNS_RESOLVED"
+  refuse 'and systemd-resolved too' called 'systemd-resolved'
+}
+
+mkdir -p /etc/systemd/system /var/log
 write_stubs
 test_online
-test_update_errors
 test_wifi_absent_network
 test_wifi_no_adapter
 test_wipe_fails
 test_stage_fails
 test_log_already_on_disk
 test_firstboot_log
-restore_sources
-rm -rf "$WK_DIR" "$WK_UNIT" "$WK_LOG" "$WK_HDD" /tmp/device-test-* /var/tmp/device-test-*
+test_firstboot_mdns
+rm -rf "$WK_DIR" "$WK_UNIT" "$WK_LOG" "$WK_HDD" "$MDNS_RESOLVED" "$MDNS_NM" /tmp/device-test-* /var/tmp/device-test-*
 
 printf 'INFO device: %s failed\n' "$failures"
 ((failures == 0))

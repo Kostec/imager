@@ -171,6 +171,16 @@ test('a new SSID needs the password again; the old PSK never goes out', async ()
   same(config.wifiPsk !== PSK && config.wifiPsk.length === 64, true);
 });
 
+test('a new SSID becomes open once the old PSK is dropped', async () => {
+  const f = form({ wifiEnabled: true, wifiSsid: 'net', wifiPsk: PSK, wifiCountryCode: 'RU' });
+  f.network.ssid = 'other';
+  same(m.wifiKeyError(f), 'editor.wifiKeyAgain');
+  f.network = { ...f.network, psk: '', pskSsid: '' };
+  same([m.wifiKeyError(f), blocked(f)], [null, null]);
+  const { config } = m.fromEditorModel(await m.sealEditorForm(f, ops));
+  same([config.wifiSsid, config.wifiPsk], ['other', undefined]);
+});
+
 test('an open network stays open', async () => {
   const f = form({ wifiEnabled: true, wifiSsid: 'net', wifiCountryCode: 'RU' });
   same(blocked(f), null);
@@ -242,7 +252,8 @@ test('connect hint names the user and host, or nothing when SSH is off', () => {
   same(a.sshCommand({ hostname: 'wukong', sshRootLogin: false, userName: 'pi' }), 'ssh pi@wukong.local');
   same(a.sshCommand({ userName: 'pi', hostname: 'wukong' }), 'ssh pi@wukong.local');
   same(a.sshCommand({ hostname: 'wukong' }), 'ssh root@wukong.local');
-  same(a.sshCommand({ userName: 'pi' }), 'ssh pi@wukongpi.local');
+  // Without a name the board turns no mDNS on, so wukongpi.local would not answer.
+  same(a.sshCommand({ userName: 'pi' }), `ssh pi@${a.SSH_UNKNOWN_HOST}`);
   same(a.sshCommand({ userName: 'pi', useStaticIp: true, staticIp: '192.168.1.50' }), 'ssh pi@192.168.1.50');
   same(a.sshCommand({ userName: 'pi', sshEnabled: false }), null);
 });

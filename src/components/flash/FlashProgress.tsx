@@ -12,7 +12,7 @@ import { formatImageIdentity } from '../../utils';
 import { SLUGS, getOsName } from '../../config';
 import { getCachedBoardImage } from '../../hooks/useTauri';
 import { useFlashOperation } from '../../hooks/useFlashOperation';
-import { sshCommand } from '../../config/autoconfig';
+import { SSH_UNKNOWN_HOST, sshCommand } from '../../config/autoconfig';
 import { getDeviceType } from '../../utils/deviceUtils';
 import { FlashStageIcon, getStageKey, isIndeterminateStage } from './FlashStageIcon';
 import { FlashActions } from './FlashActions';
@@ -190,7 +190,9 @@ export function FlashProgress({
                         : t('flash.successHintDevice', { boardName: board.name })}
                   </p>
                   {connectCommand && (
-                    <p className="flash-success-hint">{t('flash.connectHint', { command: connectCommand })}</p>
+                    <p className="flash-success-hint">
+                      {t(connectCommand.endsWith(SSH_UNKNOWN_HOST) ? 'flash.connectHintByIp' : 'flash.connectHint', { command: connectCommand })}
+                    </p>
                   )}
                   {verifyAborted && (
                     <p className="flash-success-caveat">

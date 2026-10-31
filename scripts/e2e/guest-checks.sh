@@ -57,7 +57,15 @@ log_has_no_secret() {
 	! grep -qF -e "$E2E_PASSWORD" -e "$E2E_USER_HASH" -e "$E2E_WIFI_PSK" -e "$E2E_KEY_BODY" -e "$E2E_WIFI_SSID" "$WK_LOG"
 }
 log_has_summary() { grep -q 'firstboot: finished' "$WK_LOG" && grep -q 'post-network: finished' "$WK_LOG"; }
-log_has_avahi() { grep -q 'post-network: OK avahi-daemon installed' "$WK_LOG"; }
+log_has_mdns() { grep -q 'firstboot: OK mdns' "$WK_LOG"; }
+# name.local comes from systemd-resolved; the host cannot ask over QEMU's user network, so the board side is checked.
+mdns_on_cable() {
+	local dev
+	dev=$(ip route show default | awk '{ print $5; exit }')
+	[[ -n $dev ]] && resolvectl mdns "$dev" | grep -q ': yes$'
+}
+mdns_listens() { ss -lun | grep -q ':5353 '; }
+dns_unchanged() { [[ ! -L /etc/resolv.conf ]] && ! grep -q '^nameserver 127.0.0.53' /etc/resolv.conf; }
 
 # QEMU has no Wi-Fi adapter, so the line has to say that, and not just that something failed.
 log_names_wifi_failure() {
@@ -114,8 +122,12 @@ check 'boot: no extra reboot' one_boot
 check 'log: has the summary' log_has_summary
 check 'log: no password, hash, key, SSID' log_has_no_secret
 check 'log: the cause of the Wi-Fi failure' log_names_wifi_failure
-check 'avahi: installed, says the log' log_has_avahi
-check 'avahi: daemon runs' systemctl is-active --quiet avahi-daemon
+check 'mdns: on, says the log' log_has_mdns
+check 'mdns: systemd-resolved runs' systemctl is-active --quiet systemd-resolved
+check 'mdns: on for the cable link' mdns_on_cable
+check 'mdns: listens on 5353' mdns_listens
+check 'mdns: DNS stays with NetworkManager' dns_unchanged
+printf 'INFO mdns: own name over mDNS: %s\n' "$(resolvectl query -p mdns "$E2E_HOSTNAME.local" 2>&1 | head -1)"
 
 # Without armbian-ramlog the log is on the card anyway, and the power cut below proves nothing about the copy.
 if [[ $(findmnt -no TARGET /var/log) == /var/log ]]; then

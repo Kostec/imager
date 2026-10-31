@@ -247,7 +247,7 @@ check_power_cut() {
   guest_sudo grep -q "'post-network: finished'" /var/log/wukong-firstboot.log && pass "power cut: the log keeps post-network: finished" || fail "power cut: post-network: finished is lost"
   count=$(guest_sudo grep -c "'OK user script'" /var/log/wukong-firstboot.log)
   [[ $count == 1 ]] && pass "power cut: the own script did not run again" || fail "power cut: own script count is '$count'"
-  [[ $(guest "systemctl is-active avahi-daemon" </dev/null) == active ]] && pass "power cut: avahi-daemon comes back" || fail "power cut: avahi-daemon does not run"
+  [[ $(guest "systemctl is-active systemd-resolved" </dev/null) == active ]] && pass "power cut: systemd-resolved comes back for name.local" || fail "power cut: systemd-resolved does not run"
 }
 
 # After a power off the disk itself must show that nothing of the bundle survived.

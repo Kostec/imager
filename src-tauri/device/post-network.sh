@@ -3,7 +3,7 @@
 #
 # firstboot.sh starts this as wukong-post-network.service, and it stays enabled
 # until it has finished, so a power cut repeats it on the next boot. It waits
-# for a route, the clock, Wi-Fi and avahi-daemon, wipes everything the imager
+# for a route, the clock and Wi-Fi, wipes everything the imager
 # left on the card, itself included, and then runs the user's script once from
 # RAM. If the wipe fails, the unit stays for a retry on the next boot.
 #
@@ -18,17 +18,12 @@ WIFI_PROFILE=wukong-wifi
 ROUTE_WAIT_SECS=120
 WIFI_WAIT_SECS=120
 CLOCK_WAIT_SECS=60
-APT_TIMEOUT_SECS=900
-# Far past any real install: dpkg must finish, a stop halfway leaves the packages unconfigured.
-DPKG_TIMEOUT_SECS=3600
-APT_LOCK_WAIT_SECS=120
-APT_LIST=/run/wukong-sources.list
 USER_SCRIPT_TIMEOUT_SECS=300
 USER_SCRIPT_KILL_SECS=10
 USER_SCRIPT_RUN=/run/wukong-user-script.sh
 USER_SCRIPT_RAN=/var/lib/wukong-user-script-ran
 
-# apt and the user's script must leave files others can read, as under a login shell.
+# The user's script must leave files others can read, as under a login shell.
 umask 022
 
 log() {
@@ -59,7 +54,7 @@ wait_for_route() {
 	return 1
 }
 
-# No RTC on the board: apt refuses repository metadata from the "future" until the clock is set.
+# No RTC on the board: the user's script comes next, and apt or TLS in it refuse a clock in the past.
 wait_for_clock() {
 	if timeout "$CLOCK_WAIT_SECS" chronyc waitsync 12 0 0 5 >/dev/null 2>&1; then
 		log "OK clock synchronized"
@@ -108,37 +103,6 @@ wait_for_wifi() {
 		waited=$((waited + 2))
 	done
 	log "FAIL wifi: $(wifi_failure)"
-}
-
-# bullseye-backports is gone from the mirrors, and the armhf packages of bullseye-security answer 404.
-write_apt_list() {
-	grep -v -e bullseye-backports -e security /etc/apt/sources.list >"$APT_LIST"
-}
-
-# Fetching may be cut off at any moment. dpkg may not: --foreground keeps it out of the signal even at the limit,
-# and the limit is there only so that a hung package cannot leave the settings on the card for good.
-install_avahi() {
-	local quiet=(env DEBIAN_FRONTEND=noninteractive)
-	local apt=("${quiet[@]}" apt-get -qq -o "Dir::Etc::sourcelist=$APT_LIST" -o "DPkg::Lock::Timeout=$APT_LOCK_WAIT_SECS")
-	local packages=(--no-install-recommends avahi-daemon)
-	if dpkg-query -W -f='${Status}' avahi-daemon 2>/dev/null | grep -q 'ok installed'; then
-		log "OK avahi-daemon already installed"
-		return 0
-	fi
-	if ! write_apt_list; then
-		log "FAIL avahi-daemon not installed, no apt list"
-		return 1
-	fi
-	# After a power cut inside dpkg, apt-get refuses everything until this has run.
-	timeout --foreground "$DPKG_TIMEOUT_SECS" "${quiet[@]}" dpkg --configure -a >>"$WK_LOG" 2>&1
-	# An error here is about one list, and the package may well be in the others: install decides.
-	timeout "$APT_TIMEOUT_SECS" "${apt[@]}" update >>"$WK_LOG" 2>&1 || log "apt-get update reported errors"
-	if timeout "$APT_TIMEOUT_SECS" "${apt[@]}" install -y --download-only "${packages[@]}" >>"$WK_LOG" 2>&1 &&
-		timeout --foreground "$DPKG_TIMEOUT_SECS" "${apt[@]}" install -y --no-download "${packages[@]}" >>"$WK_LOG" 2>&1; then
-		log "OK avahi-daemon installed"
-	else
-		log "FAIL avahi-daemon not installed, name.local will not resolve"
-	fi
 }
 
 # The script runs from RAM, after the wipe: a reboot or a kill inside it can neither leave settings on the card nor repeat it.
@@ -201,7 +165,7 @@ wipe_everything() {
 }
 
 main() {
-	local online='' wifi_wait='' wiped=1
+	local wifi_wait='' wiped=1
 	if [[ -r $WK_ENV ]]; then
 		# shellcheck source=/dev/null
 		. "$WK_ENV"
@@ -212,17 +176,7 @@ main() {
 		wait_for_wifi &
 		wifi_wait=$!
 	fi
-	if wait_for_route; then
-		online=1
-		wait_for_clock
-	fi
-	if [[ -n ${WK_HOSTNAME:-} ]]; then
-		if [[ -n $online ]]; then
-			install_avahi
-		else
-			log "FAIL avahi-daemon skipped, no network"
-		fi
-	fi
+	wait_for_route && wait_for_clock
 	[[ -n $wifi_wait ]] && wait "$wifi_wait"
 
 	stage_user_script

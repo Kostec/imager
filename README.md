@@ -32,6 +32,15 @@ On Windows the app asks for administrator rights at startup because it writes to
 
 For Linux, `scripts/build/linux-docker.sh` builds the `.deb` and `.AppImage` in `ubuntu:22.04` and puts them in `releases/linux/`. It works from Linux or from Git Bash on Windows.
 
+Without Docker, the same bundles build in WSL (Ubuntu 22.04). From the repository root in PowerShell:
+
+```powershell
+wsl -u root bash scripts/build/linux-wsl.sh --deps   # once: system packages
+wsl bash scripts/build/linux-wsl.sh                  # Rust and Node go into your WSL home if missing
+```
+
+The sources are copied into `~/.cache/wukong-imager-build`, so the Windows `node_modules` stay untouched; the bundles land in `releases/linux/`.
+
 ## License
 
 GPL-2.0-or-later, see [LICENSE](LICENSE). Copyright (c) 2025-2026 Daniele Briguglio and contributors. Flag graphics by Twemoji, CC-BY 4.0.

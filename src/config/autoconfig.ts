@@ -221,8 +221,12 @@ export function sshCommand(c: AutoconfigConfig): string | null {
   if (c.sshEnabled === false || (!user && c.sshRootLogin === false)) return null;
   const login = user || 'root';
   const fixed = c.useStaticIp ? c.staticIp?.trim() : '';
-  return `ssh ${login}@${fixed || `${c.hostname?.trim() || AUTOCONFIG.HOSTNAME_OF_IMAGE}.local`}`;
+  const name = c.hostname?.trim();
+  return `ssh ${login}@${fixed || (name ? `${name}.local` : SSH_UNKNOWN_HOST)}`;
 }
+
+/** Host of sshCommand when the board has neither a fixed address nor a name: firstboot turns mDNS on only with a name */
+export const SSH_UNKNOWN_HOST = '<IP>';
 
 export function settingsAvailable(support: ImageSettingsSupport | undefined): boolean {
   return support?.kind === 'supported' || support?.kind === 'deferred';

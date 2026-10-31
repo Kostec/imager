@@ -33,6 +33,17 @@ const IP_FIELDS: { field: keyof StaticIpErrors; key: 'address' | 'mask' | 'gatew
 export function WifiKeyHint({ form, onForget }: { form: EditorForm; onForget: () => void }) {
   const { t } = useTranslation();
   const error = wifiKeyError(form);
+  // The saved key belongs to the old network: dropping it is how the new one becomes open.
+  if (error === 'editor.wifiKeyAgain') {
+    return (
+      <SavedSecretHint
+        tone="warn"
+        text={t(`settings.autoconfig.${error}`)}
+        forgetLabel={t('settings.autoconfig.editor.wifiMakeOpen')}
+        onForget={onForget}
+      />
+    );
+  }
   if (error) return <FieldHint tone="warn">{t(`settings.autoconfig.${error}`)}</FieldHint>;
   if (form.secrets.wifiKey) return <FieldHint tone="ok">{t('settings.autoconfig.wifiKeyFits')}</FieldHint>;
   if (form.network.psk) return <SavedSecretHint text={t('settings.autoconfig.editor.secretSaved')} onForget={onForget} />;

@@ -16,6 +16,7 @@ Tauri-приложение (Windows, Linux) для разработчиков п
 - Debug-exe без установщика (~3 мин): `npx tauri build --debug --no-bundle --config src-tauri/tauri.debug.conf.json` → `src-tauri\target\debug\wukong-imager.exe`
 - Релиз Windows: `npm run tauri:build` → `.msi` и `-setup.exe` в `src-tauri\target\release\bundle\`
 - Релиз Linux (Docker): `bash scripts/build/linux-docker.sh` → `.AppImage` и `.deb` в `releases/linux/`
+- Релиз Linux в WSL (PowerShell, из корня): `wsl -u root bash scripts/build/linux-wsl.sh --deps` один раз, затем `wsl bash scripts/build/linux-wsl.sh` (~6 мин) → туда же
 - Тесты `src-tauri` (cargo test, fmt, clippy в ubuntu:22.04): `bash scripts/build/linux-docker.sh --test`; один тест: `bash scripts/build/linux-docker.sh --test -- <часть имени>`
 - Backend на Windows (тесты здесь не идут, см. камни): `cd src-tauri && cargo fmt --check && cargo clippy --all-targets -- -D warnings && cargo test --no-run`
 - Crate `classic-ext4` (~4 мин): `cargo test --manifest-path crates/classic-ext4/Cargo.toml`; один файл тестов: `... --test refuse` (есть `create`, `refuse`, `real_image`)
@@ -37,7 +38,7 @@ Tauri-приложение (Windows, Linux) для разработчиков п
 
 - Windows-exe требует администратора (`src-tauri/app.manifest`). Из обычного терминала `npm run tauri:dev` и `cargo test` в `src-tauri` падают с os error 740. Запущенный exe не остановить и не управлять окном из не повышенного процесса (Access is denied); при запущенном exe `tauri:dev` падает с os error 5.
 - Мост `tauri-plugin-mcp-bridge` (только debug, `127.0.0.1:9224`): в сборке с `tauri.debug.conf.json` нет `withGlobalTauri`, и его `execute_js` висит до таймаута; `tauri.dev.conf.json` (для `tauri:dev`) его включает.
-- Linux не собрать ни на Windows, ни в WSL (нет webkit2gtk и Rust) — только `linux-docker.sh`; он сам берёт контекст `desktop-linux` и тома `wukong-imager-cargo`, `wukong-imager-target` (`--clean` сбрасывает).
+- Linux собирается в Docker (`linux-docker.sh`; сам берёт контекст `desktop-linux` и тома `wukong-imager-cargo`, `wukong-imager-target`, `--clean` сбрасывает) или в WSL (`linux-wsl.sh`). DNS в WSL на этой машине то и дело не находит имена: скрипт качает с повторами, а инструменты AppImage скачивает сам, потому что Tauri на этом спотыкается.
 - Скрипты `*.sh` — только LF (`.gitattributes`): с CRLF bash на плате падает.
 - После сборки git может показать `src-tauri/Cargo.toml` изменённым только из-за окончаний строк (diff пустой).
 - `node scripts/locales/check-parity.mjs` падает (exit 1, 1962 ошибки): языки кроме en и ru откатываются на en, а проверка ждёт полных переводов. Не чинить правкой переводов.

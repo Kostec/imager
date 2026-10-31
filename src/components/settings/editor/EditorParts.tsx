@@ -50,13 +50,18 @@ export function DefaultsAction({ onClick }: { onClick: (byPointer: boolean) => v
 }
 
 /** A password stored as a hash: the field is empty, and this says so and offers to drop it */
-export function SavedSecretHint({ text, onForget }: { text: string; onForget: () => void }) {
+export function SavedSecretHint({ text, onForget, tone = 'ok', forgetLabel }: {
+  text: string;
+  onForget: () => void;
+  tone?: 'ok' | 'warn';
+  forgetLabel?: string;
+}) {
   const { t } = useTranslation();
   return (
     <span className="pe-saved">
-      <FieldHint tone="ok">{text}</FieldHint>
+      <FieldHint tone={tone}>{text}</FieldHint>
       <button type="button" className="pe-saved__forget" onClick={onForget}>
-        {t('settings.autoconfig.editor.forgetSecret')}
+        {forgetLabel ?? t('settings.autoconfig.editor.forgetSecret')}
       </button>
     </span>
   );
