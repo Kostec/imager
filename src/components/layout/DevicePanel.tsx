@@ -17,7 +17,7 @@ import { useSkeletonLoading } from '../../hooks/useSkeletonLoading';
 import { POLLING, UI, EVENTS, qdlInstructionsKey } from '../../config';
 import { defaultRootExposed, isProfileOfferedFor, settingsSupportText } from '../../config/autoconfig';
 import { profileSpec } from '../../config/profileEditorModel';
-import { ProfileMenu, ProfileWizard } from '../autoconfig';
+import { ProfileMenu, ProfileWizard, SettingsPrompt } from '../autoconfig';
 import { getDeviceColors } from '../../config/deviceColors';
 import { getDeviceType, devicesChanged, sortDevices } from '../../utils/deviceUtils';
 
@@ -88,6 +88,7 @@ export function DevicePanel({
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectedProfileId, setSelectedProfileId] = useState('');
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [promptOpen, setPromptOpen] = useState(false);
   // A profile the wizard just created, picked once the reloaded list has it
   const [pendingPickId, setPendingPickId] = useState<string | null>(null);
   const profileRowRef = useRef<HTMLButtonElement>(null);
@@ -145,8 +146,16 @@ export function DevicePanel({
 
   const openWizard = useCallback(() => {
     setMenuOpen(false);
+    setPromptOpen(false);
     setWizardOpen(true);
   }, []);
+
+  // Without a profile the image would go out as it is: ask, as Raspberry Pi Imager does, instead of trusting the row.
+  const closePrompt = useCallback(() => setPromptOpen(false), []);
+  const handleGo = () => {
+    if (showAutoconfig && !isQdlMode && !selectedProfile) setPromptOpen(true);
+    else onConfirm();
+  };
 
   const { data: rawDevices, loading, error: loadError, reload } = useAsyncData<BlockDevice[]>(
     () => getTargetDevices(isQdlMode),
@@ -348,10 +357,25 @@ export function DevicePanel({
                 <button type="button" className="device-confirm__cancel" onClick={onCancel}>
                   {t('common.cancel')}
                 </button>
-                <button type="button" className="device-confirm__go" onClick={onConfirm}>
+                <button type="button" className="device-confirm__go" onClick={handleGo}>
                   {t('flash.eraseAndFlash')}
                 </button>
               </div>
+              {promptOpen && (
+                <SettingsPrompt
+                  profiles={profiles}
+                  onPick={(id) => {
+                    setPromptOpen(false);
+                    handleProfileChange(id);
+                  }}
+                  onNewProfile={openWizard}
+                  onSkip={() => {
+                    setPromptOpen(false);
+                    onConfirm();
+                  }}
+                  onClose={closePrompt}
+                />
+              )}
             </div>
           </div>
         </div>

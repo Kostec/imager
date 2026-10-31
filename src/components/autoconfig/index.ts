@@ -4,3 +4,4 @@
 export { ProfileGlyphs } from './ProfileGlyphs';
 export { ProfileMenu } from './ProfileMenu';
 export { ProfileWizard } from './ProfileWizard';
+export { SettingsPrompt } from './SettingsPrompt';

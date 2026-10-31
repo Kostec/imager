@@ -75,6 +75,13 @@
         "keys": "SSH keys"
       }
     },
+    "settingsPrompt": {
+      "title": "Set up the board before writing?",
+      "text": "This image takes first-boot settings: user and password, Wi-Fi, SSH and more. The board boots with them already applied.",
+      "saved": "Or pick a saved profile, then check it in the summary:",
+      "setUp": "Set up",
+      "skip": "Write without settings"
+    },
     "connectHint": "Connect over SSH: {{command}}. If it does not answer, take the board's IP address from your router.",
     "connectHintByIp": "Connect over SSH: {{command}}, with the board's IP address from your router. Give the board a device name to reach it as name.local.",
     "settings": {

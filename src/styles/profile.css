@@ -98,6 +98,36 @@
   white-space: nowrap;
 }
 
+/* The question before writing: saved profiles as rows of the profile menu */
+.settings-prompt__hint {
+  margin-bottom: var(--space-sm);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.settings-prompt__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+  text-align: left;
+}
+
+.settings-prompt__item {
+  width: 100%;
+  border: 0;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-family: inherit;
+  text-align: left;
+}
+
+.settings-prompt__item:hover,
+.settings-prompt__item:focus-visible {
+  background: var(--bg-hover);
+}
+
 .profile-menu__check {
   display: inline-grid;
   flex: none;
