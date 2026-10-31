@@ -2,7 +2,7 @@
 
 **Требования:** R06, R07, R08, R11, R12, R13, R24i, R25i, R26i, G01, G02, G07, G08
 **Зависит от:** 01, 02
-**Зона:** `src-tauri/src/provision/` · `src-tauri/device/` · `src-tauri/src/autoconfig.rs` · `src-tauri/src/commands/operations.rs` · `src-tauri/src/commands/custom_image.rs` · `src-tauri/src/ssh_keys.rs`
+**Зона:** `src-tauri/src/provision/` · `src-tauri/device/` · `src-tauri/src/autoconfig.rs` · `src-tauri/src/commands/operations.rs` · `src-tauri/src/commands/custom_image.rs` · `src-tauri/src/ssh_keys.rs` · `.gitattributes`
 **Волна:** 2
 **Ревью:** да — пароли и секреты
 **Модель:** сильная

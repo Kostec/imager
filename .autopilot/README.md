@@ -17,4 +17,4 @@
 
 | Начат | Папка | Статус | Итог |
 |---|---|---|---|
-| 2026-10-30 | `2026-10-30-wukong-imager--wip` | в работе | — |
+| 2026-10-30 | `2026-10-30-wukong-imager` | сдан | Wukong Imager: запись .img/.iso на SD с первичной настройкой Wukong Pi Zero, GUI под Windows и Linux |

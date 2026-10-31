@@ -2,7 +2,7 @@
 
 **Требования:** G04, G05
 **Зависит от:** 01
-**Зона:** `src-tauri/src/catalog/` · `src-tauri/src/images/` · `src-tauri/src/download.rs` · `src-tauri/src/commands/board_queries.rs` · `src/components/settings/CatalogSection.tsx` · `src/components/layout/OsPanel.tsx` · `docs/catalog/`
+**Зона:** `src-tauri/src/catalog/` · `src-tauri/src/images/` · `src-tauri/src/download.rs` · `src-tauri/src/commands/board_queries.rs` · `src/components/settings/CatalogSection.tsx` · `src/components/layout/ImagePanel.tsx` · `src/components/layout/HomePage.tsx` · `src/components/layout/Header.tsx` · `src/App.tsx` · `src/locales/en.json` · `src/locales/ru.json` · `docs/catalog/`
 **Волна:** 2
 **Ревью:** нет
 **Модель:** обычная

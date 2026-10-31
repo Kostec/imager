@@ -64,13 +64,13 @@ pub fn is_empty(cfg: &AutoconfigConfig) -> bool;
 
 | Файл | Режим | Что |
 |---|---|---|
-| `10-wukong.conf` | 0644 | drop-in: `[Unit] Before=NetworkManager.service ssh.service`, `[Service] ExecStartPre=-/bin/bash <dir>/firstboot.sh`, `TimeoutStartSec=15min` |
+| `10-wukong.conf` | 0644 | drop-in: `[Unit] Before=NetworkManager.service ssh.service systemd-user-sessions.service`, `[Service] ExecStartPre=-/bin/bash <dir>/firstboot.sh`, `TimeoutStartSec=15min` |
 | `firstboot.sh` | 0755 | этап до сети |
 | `post-network.sh` | 0755 | этап после сети |
-| `firstboot.conf` | 0600 | `KEY='value'`, значения в одинарных кавычках, `'` → `'\''` |
+| `firstboot.env` | 0600 | `KEY='value'`, значения в одинарных кавычках, `'` → `'\''` |
 | `user-script.sh` | 0700 | свой скрипт, только если задан |
 
-Ключи `firstboot.conf`: `WK_HOSTNAME`, `WK_TIMEZONE`, `WK_LOCALE`, `WK_KEYBOARD`, `WK_WIFI_ENABLED`, `WK_WIFI_SSID`, `WK_WIFI_PSK`, `WK_WIFI_COUNTRY`, `WK_WIFI_HIDDEN`, `WK_STATIC_ENABLED`, `WK_STATIC_IP`, `WK_STATIC_PREFIX`, `WK_STATIC_GATEWAY`, `WK_STATIC_DNS`, `WK_USER_NAME`, `WK_USER_REALNAME`, `WK_USER_HASH`, `WK_USER_SHELL`, `WK_ROOT_HASH`, `WK_SSH_ENABLED`, `WK_SSH_PASSWORD_AUTH`, `WK_SSH_ROOT_LOGIN`, `WK_SSH_KEYS` (многострочная), `WK_OVERLAYS`. Незаданный ключ отсутствует; скрипт этот шаг пропускает.
+Ключи `firstboot.env`: `WK_HOSTNAME`, `WK_TIMEZONE`, `WK_LOCALE`, `WK_KEYBOARD`, `WK_WIFI_ENABLED`, `WK_WIFI_SSID`, `WK_WIFI_PSK`, `WK_WIFI_COUNTRY`, `WK_WIFI_HIDDEN`, `WK_STATIC_ENABLED`, `WK_STATIC_IP`, `WK_STATIC_PREFIX`, `WK_STATIC_GATEWAY`, `WK_STATIC_DNS`, `WK_USER_NAME`, `WK_USER_REALNAME`, `WK_USER_HASH`, `WK_USER_SHELL`, `WK_ROOT_HASH`, `WK_SSH_ENABLED`, `WK_SSH_PASSWORD_AUTH`, `WK_SSH_ROOT_LOGIN`, `WK_SSH_KEYS` (многострочная), `WK_OVERLAYS`. Незаданный ключ отсутствует; скрипт этот шаг пропускает.
 
 ### 3. `src-tauri/src/autoconfig.rs` (upstream, правится)
 
@@ -111,7 +111,7 @@ pub struct Catalog { vendors: Vec<ApiVendor>, boards: Vec<ApiBoardSummary>, imag
 
 ### 6. Фронтенд
 
-`src/config/autoconfig.ts`, `profileEditorModel.ts`, `types/index.ts` следуют полям §3. Хранилище профилей прежнее (`autoconfig_profiles` в `settings.json`), но `EditorModel` держит открытый пароль только в памяти; при сохранении и перед прошивкой вызывает `hash_password`/`derive_wifi_psk`. Пустое поле пароля при существующем хеше = «оставить как есть».
+`src/config/autoconfig.ts`, `profileEditorModel.ts`, `types/index.ts` следуют полям §3. Хранилище профилей прежнее (`autoconfig_profiles` в `settings.json`), но `EditorModel` держит только хеш и PSK, открытые пароли живут в `EditorForm.secrets`, только в памяти; при сохранении и перед прошивкой вызывает `hash_password`/`derive_wifi_psk`. Пустое поле пароля при существующем хеше = «оставить как есть».
 
 ## Тестовые швы
 
@@ -122,3 +122,33 @@ pub struct Catalog { vendors: Vec<ApiVendor>, boards: Vec<ApiBoardSummary>, imag
 ## Что построили таски
 
 <!-- дополняется по мере сборки -->
+
+### T02 — classic-ext4
+
+API как в §1. Контракт ошибок: нет MBR или раздела 0x83 → `NotFound`; 0x83 без ext4 или повреждение → `Corrupt`; валидный, но неподдержанный ext4 → `Unsupported`. `exists`/`is_regular_file` на отсутствующем пути → `Ok(false)`. Симлинк в середине пути → `Unsupported`: `/lib` в образе — симлинк, проверяй `/usr/lib/systemd/system/armbian-firstrun.service`. Файл до 4 extent'ов. `commit` не атомарен при сбое записи: только на рабочей копии. Docker в Windows-режиме: скрипты берут `--context desktop-linux`.
+
+### T01 — оболочка
+
+`catalog::{CatalogSource{BuiltIn,Url,Folder}, Catalog{vendors,boards,images}, CatalogError::Unsupported(String), current_source(), load(&CatalogSource)->Result<Catalog,CatalogError>, connectivity_probe(&CatalogSource)->Option<&str>}`. TS: `WUKONG_BOARD` (`src/config/wukong.ts`, двойник каталога Rust), `FEATURES.AUTOCONFIG` (false, снимает таск 04), `LINKS.UPSTREAM`, `LINKS.LICENSE`, `ImagePanel`. Тесты `src-tauri`: на Windows бинарник требует повышения (os error 740), поэтому полный прогон — `scripts/build/linux-docker.sh --test` (ubuntu:22.04: cargo test, fmt, clippy). На Windows только fmt, clippy, `cargo test --no-run`. Сборка Linux: `scripts/build/linux-docker.sh`.
+Скрипты устройства и `*.sh`: только LF, `.gitattributes` с `*.sh text eol=lf` (git на Windows иначе отдаст CRLF, и bash на плате упадёт).
+
+### T03 — provision
+
+`provision::{hash_password, derive_wifi_psk, probe_image, render_bundle, provision_image, is_empty, ImageSupport, BundleFile, ProvisionError{InvalidConfig,Hash,Image}, AutoconfigConfig, UserShell}`. `ImageSupport` в JSON: `{kind:"supported"|"notExt4"|"unsupportedFs"|"noFirstrunService"|"alreadyBooted", reason?}`. `autoconfig::{effective_profile, require_supported_image, TAG_ALREADY_BOOTED}`; `ssh_keys::{authorized_keys, fetch_authorized_keys}`. Команды: `hash_password(plain)`, `derive_wifi_psk(ssid,passphrase)`, `probe_custom_image(path)` (для сжатого файла ошибка `[PROBE_COMPRESSED]`), `fetch_ssh_keys(source,value)`. `examples/provision.rs`: probe | apply | render.
+Для фронтенда: незаполненные `sshEnabled` и подобные слать как null, иначе профиль не пуст; сжатый образ проверять после распаковки; теги `[AUTOCONFIG_ALREADY_BOOTED]`, `[PROBE_COMPRESSED]`.
+
+### T05 — каталог
+
+`CatalogSource::{parse, to_setting}`, `CatalogError::{Unreachable{source,reason}, Invalid{place,reason}}`, `check(&CatalogSource)->CatalogCheck{ok,message,vendors,boards,images,warnings}`, `load_active()`, `last_error()`, `set_source/save_source/init_from_store`. Команды: `get_catalog_source`, `set_catalog_source(value)`, `check_catalog_source(value)`, `get_catalog_error`, `pick_catalog_folder`. Для образов каталога `direct_url` — http(s) или file://, `sha_url` — `sha256:<hex>`. Событие `wukong-catalog-changed`. Шаг производителя виден при >1 производителе, шаг платы при >1 плате.
+
+### T04 — настройки в интерфейсе
+
+TS: `ImageSupport`, `ImageSettingsSupport`, `ImageInfo.settings_support?`; `EditorForm extends EditorModel {secrets}`, `toEditorForm`, `sealEditorForm(form, SecretOps)`, `isFormEmpty`; проверки `accessError({access,user})`, `wifiKeyError`, `ssidError`, `userError`, `hostnameError`, `scriptError`; `presetIsEmpty`, `defaultRootExposed`, `sshCommand`, `settingsAvailable`, `settingsSupportText`, `mergeAuthorizedKeys`; мастер: `wizardStepError`, `wizardStepBlocked`, `wizardAccessForm`, `wizardProfileError`. `useTauri`: `hashPassword`, `deriveWifiPsk`, `fetchSshKeys`, `checkImageSettings`.
+
+### T06 — сквозная проверка
+
+`WUKONG_TEST_IMAGE=<img> scripts/e2e/run.sh [--offline] [--keep]`. Переменные: `E2E_WORK_DIR`, `E2E_DTB`, `E2E_BOOT_TIMEOUT`, `E2E_SETTLE_TIMEOUT`, `E2E_REUSE_BUILD`. Коды: 0 ок, 1 сбой проверки, 2 не стартовал, 3 загрузка не подтверждена. Образ Docker `wukong-imager-e2e`. Рабочая копия на диске контейнера (`/var/tmp`).
+
+### F1 — правки ветки
+
+Лог: `post-network: OK wifi`, `FAIL wifi: <причина>`, `FAIL settings not wiped`, `FAIL user script not staged`, `FAIL log not copied to /var/log.hdd`; шаг firstboot `ramlog-timeout`. Файлы `/run/wukong-sources.list`, `/var/lib/wukong-user-script-ran`, постоянный `/etc/systemd/system/armbian-ramlog.service.d/10-wukong.conf`. `editorIpErrors(n).mask = 'maskInvalid'`; `wizardProfileError` проверяет маску. `E2E_SETTLE_TIMEOUT` = 2400; `scripts/e2e/device-test.sh <каталог скриптов>`.

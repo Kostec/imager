@@ -2,7 +2,7 @@
 
 **Требования:** R06, R07, R08, R09, R10, R26i, G02, G08
 **Зависит от:** 03
-**Зона:** `src/components/autoconfig/` · `src/components/settings/editor/` · `src/components/layout/DevicePanel.tsx` · `src/config/autoconfig.ts` · `src/config/profileEditorModel.ts` · `src/config/profileWizard.ts` · `src/hooks/useSettings.ts` · `src/types/index.ts`
+**Зона:** `src/components/autoconfig/` · `src/components/settings/editor/` · `src/components/layout/DevicePanel.tsx` · `src/config/autoconfig.ts` · `src/config/profileEditorModel.ts` · `src/config/profileWizard.ts` · `src/hooks/useSettings.ts` · `src/types/index.ts` · `src/config/constants.ts` · `src/components/settings/SettingsNav.tsx` · `src/components/layout/HomePage.tsx` · `src/locales/en.json` · `src/locales/ru.json` · `src/components/settings/ProfileEditor.tsx` · `src/hooks/useProfileWizard.ts` · `src/components/flash/FlashProgress.tsx` · `src/styles/profile.css` · `src/hooks/useTauri.ts` · `src/utils/errorUtils.ts` · `src/App.tsx` · `src/hooks/useFlashOperation.ts`
 **Волна:** 3
 **Ревью:** да — пароли и секреты
 **Модель:** сильная
